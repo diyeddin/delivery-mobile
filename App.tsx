@@ -23,6 +23,7 @@ import AddressesScreen from './src/screens/AddressesScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
+import AddAddressScreen from './src/screens/AddAddressScreen';
 
 // 1. Create the Stack Navigators
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
@@ -51,6 +52,7 @@ function ProfileStackNavigator() {
       {/* The Detail Screens */}
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
       <ProfileStack.Screen name="Addresses" component={AddressesScreen} />
+      <ProfileStack.Screen name="AddAddress" component={AddAddressScreen} />
       <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
       {/* Add Payments/Notifications here when ready */}
       <ProfileStack.Screen name="Payments" component={PaymentsScreen} />

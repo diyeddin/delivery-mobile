@@ -1,22 +1,32 @@
 // src/types.ts
-// 1. Define the specific screens inside Profile
+// Define the specific screens inside Profile
 export type ProfileStackParamList = {
   ProfileMain: undefined; // The menu screen
   Orders: undefined;
-  Addresses: undefined;
+  Addresses: undefined; // will be deprecated
+  AddAddress: undefined; // <--- NEW SCREEN
   Payments: undefined;
   Privacy: undefined;
   Notifications: undefined;
 };
 
-// 2. Update the MainTab to know about this stack
+// 1. Add the Address Interface
+export interface Address {
+  id: number;
+  label: string;         // "Home", "Work"
+  address_line: string;  // "123 Main St"
+  instructions?: string;
+  is_default: boolean;
+}
+
+// Update the MainTab to know about this stack
 export type MainTabParamList = {
   HomeTab: undefined;
   Cart: undefined;
   ProfileTab: undefined; // Renamed from "Profile" to "ProfileTab" to avoid confusion
 };
 
-// 3. Update the HomeStack (Keep it same, just ensure Root stuff is still there if needed)
+// Update the HomeStack (Keep it same, just ensure Root stuff is still there if needed)
 export type HomeStackParamList = {
   HomeMain: undefined;
   StoreDetails: { storeId: number; name: string };
