@@ -1,0 +1,28 @@
+import * as SecureStore from 'expo-secure-store';
+
+export const storage = {
+  getToken: async (): Promise<string | null> => {
+    try {
+      return await SecureStore.getItemAsync('token');
+    } catch (error) {
+      console.error("Error getting token", error);
+      return null;
+    }
+  },
+
+  setToken: async (token: string): Promise<void> => {
+    try {
+      await SecureStore.setItemAsync('token', token);
+    } catch (error) {
+      console.error("Error saving token", error);
+    }
+  },
+
+  removeToken: async (): Promise<void> => {
+    try {
+      await SecureStore.deleteItemAsync('token');
+    } catch (error) {
+      console.error("Error removing token", error);
+    }
+  }
+};
