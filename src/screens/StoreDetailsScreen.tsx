@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeStackParamList } from '../types';
 import client from '../api/client';
-import ProductCard from '../components/ProductCard'; // <--- Import the new component
+import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
+import Toast from 'react-native-toast-message';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetails'>;
 
@@ -22,25 +23,39 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   const { storeId, name } = route.params;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // <--- 1. Refresh State
   const { addToCart } = useCart();
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        // CHECK YOUR BACKEND URL HERE:
-        // Option A: Get all products and filter by store (if your API works that way)
-        const res = await client.get(`/products/?store_id=${storeId}`);
-        // Option B: const res = await client.get(`/stores/${storeId}/products`);
-        
-        setProducts(res.data);
-      } catch (error) {
-        console.error("Failed to load products", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
+  // 2. Define Fetch Logic (Wrapped in useCallback)
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await client.get(`/products/?store_id=${storeId}`);
+      setProducts(res.data);
+    } catch (error) {
+      console.error("Failed to load products", error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to refresh products.'
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [storeId]);
+
+  // Initial Load
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // 3. Handle Refresh (with artificial delay)
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Optional: Wait 0.5s so the user actually sees the spinner
+    await new Promise(resolve => setTimeout(resolve, 500));
+    fetchProducts();
+  }, [fetchProducts]);
 
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top', 'left', 'right']}>
@@ -57,7 +72,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       </View>
 
       {/* Content */}
-      {loading ? (
+      {loading && !refreshing ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
         </View>
@@ -65,8 +80,21 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         <FlatList
           data={products}
           keyExtractor={(item) => item.id.toString()}
-          numColumns={2} // <--- Creates the Grid Layout
-          contentContainerStyle={{ padding: 16 }}
+          numColumns={2}
+          
+          // 4. THIS FIXES THE "CANNOT PULL" ISSUE
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }} 
+          
+          // 5. Connect Refresh Control
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#D4AF37"
+              colors={['#D4AF37']}
+            />
+          }
+
           renderItem={({ item }) => (
             <ProductCard 
               name={item.name}
@@ -86,12 +114,18 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
                   price: item.price,
                   image_url: item.image_url
                 });
-                Alert.alert("Success", "Added to your bag"); // Simple feedback
+                Toast.show({
+                  type: 'success',
+                  text1: 'Added to Bag',
+                  text2: `${item.name} has been added to your cart.`,
+                  visibilityTime: 3000,
+                });
               }}
             />
           )}
           ListEmptyComponent={
-            <View className="mt-10 items-center">
+            // Center the empty text properly
+            <View className="flex-1 items-center justify-center mt-20">
               <Text className="text-gray-400">No products found in this store.</Text>
             </View>
           }

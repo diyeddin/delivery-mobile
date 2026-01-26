@@ -1,11 +1,37 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { Trash2, ArrowRight, ShoppingBag, Minus, Plus } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
 
-export default function CartScreen() {
+export default function CartScreen({ navigation }: any) {
   const { items, addToCart, decreaseCount, totalPrice } = useCart();
+  const { user } = useAuth();
+
+  const handleCheckout = () => {
+    if (!user) {
+      // Logic: If Guest, force Login
+      Alert.alert(
+        "Sign In Required",
+        "You need to log in to place an order.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Log In", 
+            onPress: () => navigation.navigate('Login') 
+          }
+        ]
+      );
+      return;
+    }
+    // Logic: If User, go to Checkout
+    navigation.navigate('Checkout'); 
+    // Note: Since Checkout is in HomeStack, we might need to cross-navigate. 
+    // Easier way: Add Checkout to root, or just verify navigation structure. 
+    // Since Cart is a Tab and Checkout is in HomeStack, try:
+    // navigation.navigate('HomeTab', { screen: 'Checkout' });
+  };
 
   // 1. The Empty State (If cart has 0 items)
   if (items.length === 0) {
@@ -92,7 +118,7 @@ export default function CartScreen() {
         <TouchableOpacity 
           className="bg-onyx py-4 rounded-xl flex-row items-center justify-center shadow-lg"
           activeOpacity={0.8}
-          onPress={() => console.log("Proceed to Checkout")}
+          onPress={handleCheckout}
         >
           <Text className="text-white font-bold text-lg mr-2">Checkout</Text>
           <ArrowRight color="white" size={20} />

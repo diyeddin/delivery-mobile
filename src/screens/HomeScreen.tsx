@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TextInput } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import client from '../api/client';
 import StoreCard from '../components/StoreCard';
 import { Search } from 'lucide-react-native';
@@ -7,7 +7,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Define the navigation prop specifically for Home
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
 interface Props {
@@ -18,26 +17,33 @@ interface Store {
   id: number;
   name: string;
   description: string;
-  category: string; // Ensure your backend sends this, or add a default
+  category: string;
 }
 
 export default function HomeScreen({ navigation }: Props) {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // <--- 1. NEW STATE
 
   const fetchStores = async () => {
     try {
-      // Update this endpoint to match your actual Backend Route!
       const res = await client.get('/stores/'); 
       setStores(res.data);
     } catch (error) {
       console.error("Failed to fetch stores:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false); // <--- 2. STOP REFRESH SPINNER
     }
   };
 
   useEffect(() => {
+    fetchStores();
+  }, []);
+
+  // 3. HANDLE REFRESH ACTION
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchStores();
   }, []);
 
@@ -66,7 +72,8 @@ export default function HomeScreen({ navigation }: Props) {
       </View>
 
       {/* Content */}
-      {loading ? (
+      {/* Only show full loader on first load, not during refresh */}
+      {loading && !refreshing ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
         </View>
@@ -74,12 +81,23 @@ export default function HomeScreen({ navigation }: Props) {
         <FlatList
           data={stores}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20, flexGrow: 1 }}
+          
+          // 4. ADD REFRESH CONTROL
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#D4AF37"
+              colors={['#D4AF37']}
+            />
+          }
+
           renderItem={({ item }) => (
             <StoreCard 
               id={item.id}
               name={item.name}
-              category={item.category || "Luxury"} // Fallback if backend doesn't send category
+              category={item.category || "Luxury"} 
               onPress={() => navigation.navigate('StoreDetails', { 
                 storeId: item.id,
                 name: item.name 

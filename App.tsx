@@ -12,20 +12,28 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import StoreDetailsScreen from './src/screens/StoreDetailsScreen';
 import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
 
-import { HomeStackParamList } from './src/types';
+import { HomeStackParamList, ProfileStackParamList } from './src/types';
 import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import { Home, ShoppingBag, User } from 'lucide-react-native';
 import { CartProvider, useCart } from './src/context/CartContext';
+import CheckoutScreen from './src/screens/CheckoutScreen';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import OrdersScreen from './src/screens/OrdersScreen';
+import AddressesScreen from './src/screens/AddressesScreen';
+import PrivacyScreen from './src/screens/PrivacyScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+import PaymentsScreen from './src/screens/PaymentsScreen';
 
 // 1. Create the Stack Navigators
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
 const Stack = createNativeStackNavigator<HomeStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const Tab = createBottomTabNavigator();
 
 // 2. Define the Home Stack (Home -> Store -> Product)
 function HomeStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="StoreDetails" component={StoreDetailsScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
@@ -33,7 +41,25 @@ function HomeStackNavigator() {
   );
 }
 
-// 3. Define the Main Tabs
+// 3. Define the Profile Stack (Profile Menu -> Orders, Addresses, etc.)
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+      {/* The Menu Screen */}
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      
+      {/* The Detail Screens */}
+      <ProfileStack.Screen name="Orders" component={OrdersScreen} />
+      <ProfileStack.Screen name="Addresses" component={AddressesScreen} />
+      <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
+      {/* Add Payments/Notifications here when ready */}
+      <ProfileStack.Screen name="Payments" component={PaymentsScreen} />
+      <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
+// 4. Define the Main Tabs
 function AppTabs() {
   const { count } = useCart();
   return (
@@ -66,9 +92,9 @@ function AppTabs() {
           tabBarBadgeStyle: { backgroundColor: '#D4AF37', color: 'black', fontSize: 10 }
         }}
       />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+      <Tab.Screen 
+        name="ProfileTab" // Use the name from MainTabParamList
+        component={ProfileStackNavigator} // Point to the Stack, not the Screen
         options={{
           tabBarIcon: ({ color }) => <User color={color} size={24} />
         }}
@@ -103,13 +129,56 @@ function RootNavigator() {
           component={LoginScreen}
           options={{
             presentation: 'modal', // Slides up from bottom
-            animation: 'slide_from_bottom'
+            animation: 'fade'
+          }}
+        />
+        <RootStack.Screen // move to cartStack later
+          name="Checkout"
+          component={CheckoutScreen}
+          options={{
+            presentation: 'modal',
+            animation: 'fade',
           }}
         />
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
+
+// DEFINE TOAST THEME (Onyx & Gold)
+const toastConfig = {
+  success: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#D4AF37', backgroundColor: '#0F0F0F' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#D4AF37' // Gold Title
+      }}
+      text2Style={{
+        fontSize: 14,
+        color: '#F5F5F0' // Creme Text
+      }}
+    />
+  ),
+  error: (props: any) => (
+    <ErrorToast
+      {...props}
+      style={{ borderLeftColor: '#EF4444', backgroundColor: '#0F0F0F' }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#EF4444' // Red Title
+      }}
+      text2Style={{
+        fontSize: 14,
+        color: '#F5F5F0'
+      }}
+    />
+  )
+};
 
 export default function App() {
   let [fontsLoaded] = useFonts({
@@ -124,6 +193,7 @@ export default function App() {
       <CartProvider>
         <StatusBar style="dark" />
         <RootNavigator />
+        <Toast config={toastConfig} />
       </CartProvider>
     </AuthProvider>
   );

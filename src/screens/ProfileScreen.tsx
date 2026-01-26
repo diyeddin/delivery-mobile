@@ -12,10 +12,18 @@ import {
   Shield,
   User as UserIcon
 } from 'lucide-react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../types';
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList>;
+// 1. New Imports for Advanced Typing
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { HomeStackParamList, ProfileStackParamList } from '../types';
+
+// 2. Define the Composite Prop
+// This tells TypeScript: "I can navigate to screens in ProfileStack OR HomeStack"
+type ProfileScreenNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>,
+  NativeStackNavigationProp<HomeStackParamList>
+>;
 
 interface Props {
   navigation: ProfileScreenNavigationProp;
@@ -79,6 +87,7 @@ export default function ProfileScreen({ navigation }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       <ScrollView>
+        {/* Header */}
         <View className="p-6 items-center border-b border-onyx/5 mb-6">
           <View className="w-24 h-24 bg-onyx rounded-full items-center justify-center mb-4 shadow-xl border-4 border-white">
             <Text className="text-gold-500 text-3xl font-serif font-bold">
@@ -89,23 +98,46 @@ export default function ProfileScreen({ navigation }: Props) {
           <Text className="text-gray-500 text-sm">{user?.sub}</Text>
         </View>
 
+        {/* My Account */}
         <View className="px-6 mb-2">
           <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">My Account</Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-6">
-          <MenuRow icon={Package} label="My Orders" onPress={() => console.log("Orders")} />
-          <MenuRow icon={MapPin} label="Shipping Addresses" onPress={() => console.log("Addresses")} />
-          <MenuRow icon={CreditCard} label="Payment Methods" onPress={() => console.log("Payments")} />
+          <MenuRow 
+            icon={Package} 
+            label="My Orders" 
+            onPress={() => navigation.navigate('Orders')} // <--- WORKS NOW
+          />
+          <MenuRow 
+            icon={MapPin} 
+            label="Shipping Addresses" 
+            onPress={() => navigation.navigate('Addresses')} // <--- WORKS NOW
+          />
+          <MenuRow 
+            icon={CreditCard} 
+            label="Payment Methods" 
+            onPress={() => navigation.navigate('Payments')} 
+          />
         </View>
 
+        {/* Preferences */}
         <View className="px-6 mb-2">
           <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Preferences</Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-8">
-          <MenuRow icon={Bell} label="Notifications" onPress={() => console.log("Notifs")} />
-          <MenuRow icon={Shield} label="Privacy & Security" onPress={() => console.log("Privacy")} />
+          <MenuRow 
+            icon={Bell} 
+            label="Notifications" 
+            onPress={() => navigation.navigate('Notifications')} 
+          />
+          <MenuRow 
+            icon={Shield} 
+            label="Privacy & Security" 
+            onPress={() => navigation.navigate('Privacy')} 
+          />
         </View>
 
+        {/* Logout */}
         <View className="mx-4 mb-10">
           <TouchableOpacity onPress={handleLogout} className="flex-row items-center justify-center bg-white border border-red-100 p-4 rounded-xl shadow-sm">
             <LogOut size={20} color="#EF4444" className="mr-2" />

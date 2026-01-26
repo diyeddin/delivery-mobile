@@ -5,6 +5,7 @@ import client from '../api/client';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
+import Toast from 'react-native-toast-message';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Login'>;
 
@@ -20,7 +21,12 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Missing Fields", "Please enter both email and password.");
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: 'Please enter both email and password.',
+        visibilityTime: 4000,
+      });
       return;
     }
 
@@ -41,13 +47,18 @@ export default function LoginScreen({ navigation }: Props) {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('MainTabs'); 
+        navigation.navigate('MainTabs');
       }
       
     } catch (err: any) {
       console.error(err);
       const msg = err.response?.data?.detail || "Could not connect to server.";
-      Alert.alert("Login Failed", msg);
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: msg,
+        visibilityTime: 4000,
+      });
     } finally {
       setIsSubmitting(false);
     }
