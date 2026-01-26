@@ -23,5 +23,5 @@ export type HomeStackParamList = {
   ProductDetails: { productId: number; name: string; price: number; description: string; image_url?: string };
   Login: undefined;
   Checkout: undefined;
-  MainTabs: { screen?: keyof MainTabParamList };
+  MainTabs: { screen?: keyof MainTabParamList } | undefined;
 };
