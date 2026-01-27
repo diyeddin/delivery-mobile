@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { storage } from '../utils/storage';
 import { View, ActivityIndicator } from 'react-native';
+// NEW IMPORTS
+import { setupAuthInterceptor } from '../api/client';
+import Toast from 'react-native-toast-message';
 
 // NOTE: Same User Interface as the Web!
 interface User {
@@ -11,6 +14,7 @@ interface User {
   sub: string;
   name?: string;
   id?: number;
+  exp?: number; // Added expiry field
 }
 
 interface AuthContextType {
@@ -29,19 +33,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Check for stored token on app launch
+  // 1. Define Logout Function First (so we can use it in effects)
+  const logout = async () => {
+    setToken(null);
+    setUser(null);
+    await storage.removeToken();
+  };
+
+  // 2. Connect the "Fire Alarm" (Interceptor)
+  useEffect(() => {
+    setupAuthInterceptor(() => {
+      logout();
+      Toast.show({
+        type: 'error',
+        text1: 'Session Expired',
+        text2: 'Please log in again.',
+        visibilityTime: 4000,
+      });
+    });
+  }, []);
+
+  // 3. Check for stored token on app launch
   useEffect(() => {
     const loadToken = async () => {
       try {
         const storedToken = await storage.getToken();
         if (storedToken) {
           const decoded = jwtDecode<User>(storedToken);
-          setToken(storedToken);
-          setUser(decoded);
+          
+          // Optional: Check expiry immediately on load
+          const currentTime = Date.now() / 1000;
+          if (decoded.exp && decoded.exp < currentTime) {
+            console.log("Token expired on load");
+            await logout();
+          } else {
+            setToken(storedToken);
+            setUser(decoded);
+          }
         }
       } catch (e) {
         console.error("Auth Load Error:", e);
-        await storage.removeToken();
+        await logout();
       } finally {
         setIsLoading(false);
       }
@@ -49,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadToken();
   }, []);
 
-  // 2. Login
+  // 4. Login
   const login = async (newToken: string) => {
     try {
       const decoded = jwtDecode<User>(newToken);
@@ -59,13 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Login failed", error);
     }
-  };
-
-  // 3. Logout
-  const logout = async () => {
-    setToken(null);
-    setUser(null);
-    await storage.removeToken();
   };
 
   if (isLoading) {

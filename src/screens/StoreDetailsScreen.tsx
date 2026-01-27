@@ -32,6 +32,9 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       const res = await client.get(`/products/?store_id=${storeId}`);
       setProducts(res.data);
     } catch (error) {
+      // If we blocked it in client.ts, don't show a toast (Banner is enough)
+      // if (error === 'NO_INTERNET') return;
+      
       console.error("Failed to load products", error);
       Toast.show({
         type: 'error',

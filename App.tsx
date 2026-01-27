@@ -1,8 +1,12 @@
 import './global.css';
+import React, { useEffect, useState } from 'react'; // <--- Added React hooks
+import { View, Text } from 'react-native'; // <--- Added View/Text
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import NetInfo from '@react-native-community/netinfo'; // <--- Added NetInfo
+import { WifiOff } from 'lucide-react-native'; // <--- Added Icon
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
@@ -25,13 +29,43 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
 import AddAddressScreen from './src/screens/AddAddressScreen';
 
-// 1. Create the Stack Navigators
+// ---------------------------------------------------------
+// 1. NEW COMPONENT: Offline Banner
+// ---------------------------------------------------------
+function OfflineBanner() {
+  const [isConnected, setIsConnected] = useState(true);
+
+  useEffect(() => {
+    // Subscribe to network state updates
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(!!state.isConnected);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (isConnected) return null;
+
+  return (
+    <View className="absolute top-0 w-full bg-red-600 z-50 pt-12 pb-2 items-center justify-center shadow-md">
+      <View className="flex-row items-center">
+        <WifiOff color="white" size={16} className="mr-2" />
+        <Text className="text-white font-bold text-xs uppercase tracking-widest">
+          No Internet Connection
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------
+// 2. Existing Navigators
+// ---------------------------------------------------------
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// 2. Define the Home Stack (Home -> Store -> Product)
+// Define the Home Stack (Home -> Store -> Product)
 function HomeStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -42,26 +76,22 @@ function HomeStackNavigator() {
   );
 }
 
-// 3. Define the Profile Stack (Profile Menu -> Orders, Addresses, etc.)
+// Define the Profile Stack (Profile Menu -> Orders, Addresses, etc.)
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-      {/* The Menu Screen */}
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
-      
-      {/* The Detail Screens */}
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
       <ProfileStack.Screen name="Addresses" component={AddressesScreen} />
       <ProfileStack.Screen name="AddAddress" component={AddAddressScreen} />
       <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
-      {/* Add Payments/Notifications here when ready */}
       <ProfileStack.Screen name="Payments" component={PaymentsScreen} />
       <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
     </ProfileStack.Navigator>
   );
 }
 
-// 4. Define the Main Tabs
+// Define the Main Tabs
 function AppTabs() {
   const { count } = useCart();
   return (
@@ -95,8 +125,8 @@ function AppTabs() {
         }}
       />
       <Tab.Screen 
-        name="ProfileTab" // Use the name from MainTabParamList
-        component={ProfileStackNavigator} // Point to the Stack, not the Screen
+        name="ProfileTab" 
+        component={ProfileStackNavigator}
         options={{
           tabBarIcon: ({ color }) => <User color={color} size={24} />
         }}
@@ -113,7 +143,7 @@ const LuxuryTheme = {
   },
 };
 
-// 4. The Root Navigator (Handles Guest Mode & Modals)
+// The Root Navigator (Handles Guest Mode & Modals)
 function RootNavigator() {
   const { isLoading } = useAuth();
 
@@ -122,19 +152,16 @@ function RootNavigator() {
   return (
     <NavigationContainer theme={LuxuryTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {/* The Main App is ALWAYS accessible, even for guests */}
         <RootStack.Screen name="MainTabs" component={AppTabs} />
-
-        {/* Login is a modal screen you can navigate TO */}
         <RootStack.Screen
           name="Login"
           component={LoginScreen}
           options={{
-            presentation: 'modal', // Slides up from bottom
+            presentation: 'modal', 
             animation: 'fade'
           }}
         />
-        <RootStack.Screen // move to cartStack later
+        <RootStack.Screen 
           name="Checkout"
           component={CheckoutScreen}
           options={{
@@ -157,11 +184,11 @@ const toastConfig = {
       text1Style={{
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#D4AF37' // Gold Title
+        color: '#D4AF37'
       }}
       text2Style={{
         fontSize: 14,
-        color: '#F5F5F0' // Creme Text
+        color: '#F5F5F0'
       }}
     />
   ),
@@ -172,7 +199,7 @@ const toastConfig = {
       text1Style={{
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#EF4444' // Red Title
+        color: '#EF4444' 
       }}
       text2Style={{
         fontSize: 14,
@@ -194,8 +221,12 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <StatusBar style="dark" />
+        
+        {/* 3. Inject Offline Banner at the Top Level */}
+        <OfflineBanner />
+        
         <RootNavigator />
-        <Toast config={toastConfig} />
+        <Toast config={toastConfig} topOffset={75} />
       </CartProvider>
     </AuthProvider>
   );

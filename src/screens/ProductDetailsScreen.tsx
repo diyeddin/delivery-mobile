@@ -45,6 +45,8 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
       // Toast.show({ type: 'success', text1: 'Updated', visibilityTime: 1000 });
 
     } catch (error) {
+      // if (error === 'NO_INTERNET') return;
+
       console.error("Failed to refresh product:", error);
       Toast.show({
         type: 'error',
