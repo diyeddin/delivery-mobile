@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, MapPin, Plus, Trash2, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Plus, Trash2, Pencil } from 'lucide-react-native'; // <--- Import Pencil
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList, Address } from '../types';
 import client from '../api/client';
 import Toast from 'react-native-toast-message';
-import { useFocusEffect } from '@react-navigation/native'; // <--- Important!
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Addresses'>;
 
@@ -27,7 +27,6 @@ export default function AddressesScreen({ navigation }: Props) {
     }
   };
 
-  // Reload data whenever this screen comes into focus (e.g. after adding new address)
   useFocusEffect(
     useCallback(() => {
       fetchAddresses();
@@ -60,15 +59,15 @@ export default function AddressesScreen({ navigation }: Props) {
 
   const handleSetDefault = async (id: number) => {
     try {
-      // Optimistic Update (Update UI instantly)
+      // Optimistic Update
       setAddresses(prev => prev.map(a => ({ ...a, is_default: a.id === id })));
-      
-      await client.patch(`/addresses/${id}`, { is_default: true });
+      // Explicit Payload (ensure only ONE field is sent)
+      const payload = { is_default: true };
+      await client.patch(`/addresses/${id}`, payload);
       Toast.show({ type: 'success', text1: 'Default address updated' });
-      fetchAddresses(); // Sync with server to be safe
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Failed to update' });
-      fetchAddresses(); // Revert on error
+      fetchAddresses();
     }
   };
 
@@ -114,7 +113,7 @@ export default function AddressesScreen({ navigation }: Props) {
               </View>
 
               {/* Text Info */}
-              <View className="flex-1">
+              <View className="flex-1 mr-2">
                 <View className="flex-row items-center">
                   <Text className="font-bold text-onyx text-base">{item.label}</Text>
                   {item.is_default && (
@@ -123,25 +122,36 @@ export default function AddressesScreen({ navigation }: Props) {
                     </Text>
                   )}
                 </View>
-                <Text className="text-gray-500 text-sm mt-1 leading-5">{item.address_line}</Text>
-                {item.instructions && (
-                  <Text className="text-gray-400 text-xs mt-1 italic">"{item.instructions}"</Text>
-                )}
+                <Text className="text-gray-500 text-sm mt-1 leading-5" numberOfLines={2}>
+                  {item.address_line}
+                </Text>
               </View>
 
-              {/* Delete Action */}
-              <TouchableOpacity 
-                onPress={() => handleDelete(item.id)}
-                className="p-3 -mr-2"
-              >
-                <Trash2 size={18} color="#EF4444" opacity={0.5} />
-              </TouchableOpacity>
+              {/* Action Buttons */}
+              <View className="flex-row items-center">
+                
+                {/* 1. NEW: Edit Button */}
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('AddAddress', { addressToEdit: item })}
+                  className="p-2 mr-1 bg-gray-50 rounded-lg"
+                >
+                  <Pencil size={18} color="#4B5563" />
+                </TouchableOpacity>
+
+                {/* 2. Delete Button */}
+                <TouchableOpacity 
+                  onPress={() => handleDelete(item.id)}
+                  className="p-2 bg-red-50 rounded-lg"
+                >
+                  <Trash2 size={18} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
           )}
         />
       )}
       
-      {/* FAB (Floating Add Button) */}
+      {/* FAB */}
       <View className="absolute bottom-10 right-6">
         <TouchableOpacity 
           onPress={() => navigation.navigate('AddAddress')}

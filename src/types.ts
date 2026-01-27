@@ -5,7 +5,7 @@ export type ProfileStackParamList = {
   Orders: undefined;
   OrderDetails: { orderId: number };
   Addresses: undefined; // will be deprecated
-  AddAddress: undefined;
+  AddAddress: { addressToEdit?: Address } | undefined;
   Payments: undefined;
   Privacy: undefined;
   Notifications: undefined;

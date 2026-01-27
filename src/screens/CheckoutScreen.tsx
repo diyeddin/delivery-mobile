@@ -1,23 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, MapPin, CreditCard, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, MapPin, CreditCard, CheckCircle, Plus } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
-import Toast from 'react-native-toast-message'; // <--- NEW IMPORT
+import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native'; // Keep data fresh
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Checkout'>;
+
+// Define Address Type
+interface Address {
+  id: number;
+  label: string;
+  address_line: string;
+  is_default: boolean;
+}
 
 export default function CheckoutScreen({ navigation }: Props) {
   const { items, totalPrice, count, clearCart } = useCart();
   const { user } = useAuth();
+  
   const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState<Address | null>(null);
+  const [fetchingAddress, setFetchingAddress] = useState(true);
+
+  // 1. Fetch Default Address on Load (and when returning to screen)
+  useFocusEffect(
+    useCallback(() => {
+      fetchDefaultAddress();
+    }, [])
+  );
+
+  const fetchDefaultAddress = async () => {
+    try {
+      setFetchingAddress(true);
+      const res = await client.get('/addresses/default');
+      setAddress(res.data);
+    } catch (error: any) {
+      // If 404, it just means no default set. 
+      if (error.response?.status !== 404) {
+        console.error("Failed to fetch default address", error);
+      }
+      setAddress(null);
+    } finally {
+      setFetchingAddress(false);
+    }
+  };
 
   const handlePlaceOrder = async () => {
-    // 1. Auth Check (Kept as Alert because we need the buttons)
+    // 1. Auth Check
     if (!user) {
       Alert.alert("Login Required", "Please login to checkout", [
         { text: "Cancel", style: "cancel" },
@@ -26,23 +61,32 @@ export default function CheckoutScreen({ navigation }: Props) {
       return;
     }
 
+    // 2. Address Check
+    if (!address) {
+      Toast.show({
+        type: 'error',
+        text1: 'Address Missing',
+        text2: 'Please add a shipping address first.',
+      });
+      // Optional: Navigate them to Add Address screen
+      // navigation.navigate('AddAddress'); 
+      return;
+    }
+
     setLoading(true);
     try {
-      // 2. Prepare Payload
       const itemsPayload = items.map(i => ({
         product_id: i.id,
         quantity: i.quantity
       }));
 
-      // 3. Send API Request
+      // 3. Send API Request with REAL Address
       await client.post('/orders/', {
-        delivery_address: "Concierge Pickup", 
+        delivery_address: address.address_line, // <--- Using the fetched address
         items: itemsPayload
       });
 
-      // 4. Success Handling (Now using Toast)
-      
-      // A. Show the notification
+      // 4. Success Handling
       Toast.show({
         type: 'success',
         text1: 'Order Confirmed',
@@ -50,20 +94,9 @@ export default function CheckoutScreen({ navigation }: Props) {
         visibilityTime: 4000,
       });
 
-      // B. Navigate immediately (Don't wait for user input)
-      // navigation.goBack(); // Close Checkout first
-      navigation.navigate('MainTabs', { screen: "ProfileTab" }); // Then go to Profile to see Orders
-      // navigation.reset({
-      //   index: 0,
-      //   routes: [
-      //     {
-      //       name: 'MainTabs',
-      //       params: { screen: 'Profile' } // Going to Profile (Orders) is better UX than empty Cart
-      //     },
-      //   ],
-      // });
+      // Navigate to Orders Tab
+      navigation.navigate('MainTabs', { screen: "ProfileTab" });
 
-      // C. Clear Cart (Delayed slightly to prevent UI flicker during transition)
       setTimeout(() => {
         clearCart();
       }, 500);
@@ -72,7 +105,6 @@ export default function CheckoutScreen({ navigation }: Props) {
       console.error("Checkout Error:", err);
       const msg = err.response?.data?.detail || "Checkout failed";
       
-      // 5. Error Handling (Now using Toast)
       Toast.show({
         type: 'error',
         text1: 'Order Failed',
@@ -94,17 +126,38 @@ export default function CheckoutScreen({ navigation }: Props) {
       </View>
 
       <ScrollView className="flex-1 p-6">
-        {/* Shipping Address */}
-        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Shipping To</Text>
-        <View className="bg-white p-4 rounded-xl flex-row items-center shadow-sm mb-6 border border-gray-100">
-          <View className="bg-gray-50 p-3 rounded-lg mr-4">
-            <MapPin color="#0F0F0F" size={24} />
-          </View>
-          <View>
-            <Text className="text-onyx font-bold text-base">{user?.name || user?.name}</Text>
-            <Text className="text-gray-500 text-sm">Concierge Pickup</Text>
-          </View>
+        {/* Shipping Address Section */}
+        <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest">Shipping To</Text>
+            {/* Link to change address if needed */}
+            <TouchableOpacity onPress={() => navigation.navigate('MainTabs', { screen: 'ProfileTab' })}> 
+                 <Text className="text-gold text-xs font-bold">Change</Text>
+            </TouchableOpacity>
         </View>
+
+        {fetchingAddress ? (
+            <ActivityIndicator size="small" color="#D4AF37" className="mb-6" />
+        ) : address ? (
+            <View className="bg-white p-4 rounded-xl flex-row items-center shadow-sm mb-6 border border-gray-100">
+            <View className="bg-gray-50 p-3 rounded-lg mr-4">
+                <MapPin color="#0F0F0F" size={24} />
+            </View>
+            <View className="flex-1">
+                <Text className="text-onyx font-bold text-base">{address.label}</Text>
+                <Text className="text-gray-500 text-sm" numberOfLines={2}>{address.address_line}</Text>
+            </View>
+            </View>
+        ) : (
+            // Fallback UI if no address exists
+            <TouchableOpacity 
+                // Assuming you have an 'AddAddress' route, or direct them to Profile -> Addresses
+                onPress={() => navigation.navigate('MainTabs', { screen: 'ProfileTab' })}
+                className="bg-white p-4 rounded-xl flex-row items-center justify-center shadow-sm mb-6 border border-dashed border-gray-300"
+            >
+                <Plus color="#9CA3AF" size={20} className="mr-2" />
+                <Text className="text-gray-400 font-bold">Add Delivery Address</Text>
+            </TouchableOpacity>
+        )}
 
         {/* Payment Method */}
         <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Payment Method</Text>
@@ -141,8 +194,10 @@ export default function CheckoutScreen({ navigation }: Props) {
       <View className="bg-white p-6 shadow-2xl border-t border-gray-100">
         <TouchableOpacity 
           onPress={handlePlaceOrder}
-          disabled={loading}
-          className="bg-onyx py-4 rounded-xl flex-row items-center justify-center shadow-lg"
+          disabled={loading || !address} // Disable if no address
+          className={`py-4 rounded-xl flex-row items-center justify-center shadow-lg ${
+              !address ? 'bg-gray-300' : 'bg-onyx'
+          }`}
         >
           {loading ? (
             <ActivityIndicator color="white" />
