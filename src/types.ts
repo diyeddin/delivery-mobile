@@ -3,8 +3,9 @@
 export type ProfileStackParamList = {
   ProfileMain: undefined; // The menu screen
   Orders: undefined;
+  OrderDetails: { orderId: number };
   Addresses: undefined; // will be deprecated
-  AddAddress: undefined; // <--- NEW SCREEN
+  AddAddress: undefined;
   Payments: undefined;
   Privacy: undefined;
   Notifications: undefined;

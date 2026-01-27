@@ -28,6 +28,7 @@ import PrivacyScreen from './src/screens/PrivacyScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
 import AddAddressScreen from './src/screens/AddAddressScreen';
+import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 
 // ---------------------------------------------------------
 // 1. NEW COMPONENT: Offline Banner
@@ -82,6 +83,7 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
+      <ProfileStack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       <ProfileStack.Screen name="Addresses" component={AddressesScreen} />
       <ProfileStack.Screen name="AddAddress" component={AddAddressScreen} />
       <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />

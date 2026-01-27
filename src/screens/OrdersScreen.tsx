@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react-native';
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChevronRight } from 'lucide-react-native';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
@@ -20,12 +20,15 @@ export default function OrdersScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // 1. NEW: Track which tab is open
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
 
+  // Fetch orders when screen comes into focus
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchOrders();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchOrders = async () => {
     try {
@@ -49,16 +52,14 @@ export default function OrdersScreen({ navigation }: Props) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // 2. NEW: Filtering Logic
   const filteredOrders = orders.filter(order => {
-    // Define what statuses count as "Finished"
     const finishedStatuses = ['completed', 'delivered', 'canceled', 'refunded'];
     const status = order.status ? order.status.toLowerCase() : '';
     
     if (activeTab === 'active') {
-      return !finishedStatuses.includes(status); // Show pending, processing, shipped
+      return !finishedStatuses.includes(status); 
     } else {
-      return finishedStatuses.includes(status);  // Show history
+      return finishedStatuses.includes(status);
     }
   });
 
@@ -72,7 +73,7 @@ export default function OrdersScreen({ navigation }: Props) {
         <Text className="text-xl text-onyx font-serif">My Orders</Text>
       </View>
 
-      {/* 3. NEW: Tab Buttons */}
+      {/* Tab Buttons */}
       <View className="flex-row p-4 mx-2">
         <TouchableOpacity 
           onPress={() => setActiveTab('active')}
@@ -108,12 +109,7 @@ export default function OrdersScreen({ navigation }: Props) {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#D4AF37"
-              colors={['#D4AF37']}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={['#D4AF37']} />
           }
           ListEmptyComponent={
             <View className="items-center mt-20 opacity-50">
@@ -124,9 +120,10 @@ export default function OrdersScreen({ navigation }: Props) {
             </View>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-4">
-              
-              {/* Card Header */}
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
+              className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-4"
+            >
               <View className="flex-row justify-between items-start mb-4">
                 <View>
                   <Text className="font-bold text-onyx text-lg">Order #{item.id}</Text>
@@ -136,27 +133,25 @@ export default function OrdersScreen({ navigation }: Props) {
                   </View>
                 </View>
                 
-                {/* Status Badge */}
-                <View className={`px-3 py-1.5 rounded-full flex-row items-center ${
-                  item.status === 'completed' || item.status === 'delivered' ? 'bg-green-100' : 
-                  item.status === 'canceled' ? 'bg-red-100' : 'bg-gold-50'
+                {/* Chevron indicating Clickability */}
+                <ChevronRight size={20} color="#D1D5DB" />
+              </View>
+
+              <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-lg mb-3">
+                <Text className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</Text>
+                <View className={`px-2 py-1 rounded text-xs ${
+                   item.status === 'completed' || item.status === 'delivered' ? 'bg-green-100' : 
+                   item.status === 'canceled' ? 'bg-red-100' : 'bg-amber-100'
                 }`}>
-                  {item.status === 'completed' ? <CheckCircle size={12} color="#15803d" className="mr-1"/> :
-                   item.status === 'canceled' ? <XCircle size={12} color="#b91c1c" className="mr-1"/> :
-                   <Truck size={12} color="#a16207" className="mr-1"/>}
-                  
-                  <Text className={`text-xs font-bold capitalize ${
-                    item.status === 'completed' || item.status === 'delivered' ? 'text-green-700' : 
-                    item.status === 'canceled' ? 'text-red-700' : 'text-gold-700'
-                  }`}>
-                    {item.status || "Processing"}
-                  </Text>
+                   <Text className={`text-xs font-bold capitalize ${
+                      item.status === 'completed' || item.status === 'delivered' ? 'text-green-700' : 
+                      item.status === 'canceled' ? 'text-red-700' : 'text-amber-800'
+                   }`}>
+                     {item.status?.replace('_', ' ') || 'Processing'}
+                   </Text>
                 </View>
               </View>
 
-              <View className="h-[1px] bg-gray-50 mb-3" />
-
-              {/* Card Footer */}
               <View className="flex-row justify-between items-center">
                 <Text className="text-gray-400 text-xs uppercase font-bold tracking-widest">Total</Text>
                 <Text className="text-onyx font-serif font-bold text-xl">
