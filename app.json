@@ -28,6 +28,12 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "eeaf0dd4-34f1-4e72-b113-7dc2cbf3b43b"
+      }
+    },
+    "owner": "diyeddin"
   }
 }

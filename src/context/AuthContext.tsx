@@ -1,20 +1,35 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { storage } from '../utils/storage';
-import { View, ActivityIndicator } from 'react-native';
-// NEW IMPORTS
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { setupAuthInterceptor } from '../api/client';
 import Toast from 'react-native-toast-message';
+import client from '../api/client'; // <--- Import client to send token
 
-// NOTE: Same User Interface as the Web!
+// EXPO NOTIFICATIONS IMPORTS
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
+// Configure how notifications behave when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 interface User {
   email: string;
   role: 'admin' | 'store_owner' | 'driver' | 'customer';
   sub: string;
   name?: string;
   id?: number;
-  exp?: number; // Added expiry field
+  exp?: number;
 }
 
 interface AuthContextType {
@@ -24,6 +39,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
+  registerPushToken: () => Promise<void>; // <--- Expose this for the Settings Screen
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,14 +49,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Define Logout Function First (so we can use it in effects)
+  // --- LOGOUT ---
   const logout = async () => {
     setToken(null);
     setUser(null);
     await storage.removeToken();
   };
 
-  // 2. Connect the "Fire Alarm" (Interceptor)
+  // --- INTERCEPTOR ---
   useEffect(() => {
     setupAuthInterceptor(() => {
       logout();
@@ -53,15 +69,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  // 3. Check for stored token on app launch
+  // --- INITIAL LOAD ---
   useEffect(() => {
     const loadToken = async () => {
       try {
         const storedToken = await storage.getToken();
         if (storedToken) {
           const decoded = jwtDecode<User>(storedToken);
-          
-          // Optional: Check expiry immediately on load
           const currentTime = Date.now() / 1000;
           if (decoded.exp && decoded.exp < currentTime) {
             console.log("Token expired on load");
@@ -81,20 +95,77 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadToken();
   }, []);
 
-  // 4. Login
+  // --- PUSH NOTIFICATION LOGIC ---
+  const registerForPushNotificationsAsync = async () => {
+    if (!Device.isDevice) {
+      console.log('Must use physical device for Push Notifications');
+      return;
+    }
+
+    try {
+      // 1. Check/Request Permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('Failed to get push token for push notification!');
+        return;
+      }
+
+      // 2. Get the Token
+      // NOTE: We need projectId for Expo 49+
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId, 
+      });
+      const expoToken = tokenData.data;
+      console.log("📲 Expo Push Token:", expoToken);
+
+      // 3. Send to Backend
+      await client.post('/users/me/push-token', { token: expoToken });
+      console.log("✅ Token sent to backend successfully");
+
+    } catch (error) {
+      console.error("Error registering push token:", error);
+    }
+
+    // Android specific channel setup
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+  };
+
+  // --- LOGIN ---
   const login = async (newToken: string) => {
     try {
       const decoded = jwtDecode<User>(newToken);
       setToken(newToken);
       setUser(decoded);
       await storage.setToken(newToken);
+      
+      // AUTO-REGISTER ON LOGIN
+      // We wait a brief moment to ensure state is settled
+      setTimeout(() => {
+        registerForPushNotificationsAsync();
+      }, 1000);
+
     } catch (error) {
       console.error("Login failed", error);
     }
   };
 
   if (isLoading) {
-    // Simple Native Loading Spinner
     return (
       <View className="flex-1 items-center justify-center bg-onyx">
         <ActivityIndicator size="large" color="#D4AF37" />
@@ -103,7 +174,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout, 
+      isAuthenticated: !!user, 
+      isLoading,
+      registerPushToken: registerForPushNotificationsAsync 
+    }}>
       {children}
     </AuthContext.Provider>
   );
