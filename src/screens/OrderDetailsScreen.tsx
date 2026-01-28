@@ -1,12 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Check, Clock, MapPin, ShoppingBag } from 'lucide-react-native';
+import { ArrowLeft, Check, MapPin, ShoppingBag } from 'lucide-react-native';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
+import * as SecureStore from 'expo-secure-store'; // <--- 1. IMPORT SECURE STORE
 
-// Define the Status Order
+// --- CONFIG: WebSocket URL ---
+// Android Emulator: 10.0.2.2
+// Physical Device: Your Computer IP (e.g., 192.168.1.101)
+const HOST = '192.168.1.101:8000';
+const WS_BASE_URL = `ws://${HOST}/api/v1/orders`; 
+
 const STATUS_STEPS = [
   { key: 'pending', label: 'Order Placed', desc: 'We have received your order.' },
   { key: 'confirmed', label: 'Confirmed', desc: 'The store is preparing your items.' },
@@ -20,13 +26,74 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 
 export default function OrderDetailsScreen({ route, navigation }: Props) {
   const { orderId } = route.params;
+  
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // 1. Initial Fetch
   useEffect(() => {
     fetchOrderDetails();
   }, []);
+
+  // 2. WebSocket Listener (Real-Time Updates with Auth)
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+
+    const connectWebSocket = async () => {
+        try {
+            // A. Get Token from SecureStore
+            const token = await SecureStore.getItemAsync('token');
+            
+            if (!token) {
+                console.log("❌ No token found in SecureStore, cannot connect to WS");
+                return;
+            }
+
+            // B. Attach Token to URL
+            const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
+            console.log("Connecting WS (Status Only):", url);
+            
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                console.log("✅ WS Connected");
+            };
+
+            ws.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    console.log("📩 WS Message:", data);
+
+                    // Only listen for status updates (Safe Version)
+                    if (data.type === 'status_update') {
+                        setOrder((prev: any) => prev ? ({ ...prev, status: data.status }) : prev);
+                    }
+                } catch (err) {
+                    console.log("WS Parse Error", err);
+                }
+            };
+
+            ws.onerror = (e) => {
+                // Note: WebSocket errors are often generic on RN
+                console.log("❌ WS Error. Check server logs or network."); 
+            };
+
+            ws.onclose = (e) => {
+                console.log("WS Closed", e.code, e.reason);
+            };
+
+        } catch (error) {
+            console.error("Failed to setup WebSocket:", error);
+        }
+    };
+
+    connectWebSocket();
+
+    return () => {
+        if (ws) ws.close();
+    };
+  }, [orderId]);
 
   const fetchOrderDetails = async () => {
     try {
@@ -45,7 +112,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
     fetchOrderDetails();
   }, []);
 
-  if (loading) {
+  if (loading && !order) {
     return (
       <View className="flex-1 items-center justify-center bg-creme">
         <ActivityIndicator size="large" color="#D4AF37" />
@@ -55,7 +122,6 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
   if (!order) return null;
 
-  // Calculate current step index
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.key === order.status);
   const isCanceled = order.status === 'canceled';
 
@@ -74,25 +140,18 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={['#D4AF37']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" />
         }
       >
-        
-        {/* SECTION 1: TIMELINE */}
+        {/* Status Timeline */}
         <View className="bg-white p-6 mb-4">
           <Text className="text-lg font-bold text-onyx mb-6">Order Status</Text>
-          
           {isCanceled ? (
             <View className="bg-red-50 p-4 rounded-xl border border-red-100 flex-row items-center">
-              <View className="bg-red-100 p-2 rounded-full mr-3">
-                <Text className="text-red-600 font-bold">✕</Text>
-              </View>
-              <View>
                 <Text className="text-red-800 font-bold">Order Canceled</Text>
-                <Text className="text-red-600 text-xs">This order was canceled.</Text>
-              </View>
             </View>
           ) : (
             <View className="pl-2">
@@ -103,23 +162,18 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
                 return (
                   <View key={step.key} className="flex-row">
-                    {/* Left Column: Line & Dot */}
                     <View className="items-center mr-4" style={{ width: 20 }}>
-                      {/* The Dot */}
                       <View className={`w-5 h-5 rounded-full items-center justify-center z-10 ${
                         isActive ? 'bg-gold' : 'bg-gray-200'
                       }`}>
                         {isActive && <Check size={10} color="white" strokeWidth={4} />}
                       </View>
-                      {/* The Line */}
                       {!isLast && (
                         <View className={`w-0.5 flex-1 ${
                           isActive && index < currentStepIndex ? 'bg-gold' : 'bg-gray-200'
                         }`} />
                       )}
                     </View>
-
-                    {/* Right Column: Text */}
                     <View className={`flex-1 pb-8 ${isCurrent ? 'opacity-100' : 'opacity-40'}`}>
                       <Text className="text-onyx font-bold text-base">{step.label}</Text>
                       <Text className="text-gray-500 text-xs mt-0.5">{step.desc}</Text>
@@ -131,7 +185,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
           )}
         </View>
 
-        {/* SECTION 2: ITEMS */}
+        {/* Items List */}
         <View className="bg-white p-6 mb-4">
           <Text className="text-lg font-bold text-onyx mb-4">Items</Text>
           {order.items?.map((item: any, idx: number) => (
@@ -148,25 +202,16 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
               <Text className="font-bold text-onyx">${item.price_at_purchase.toFixed(2)}</Text>
             </View>
           ))}
-          
-          <View className="h-[1px] bg-gray-100 my-4" />
-          
-          <View className="flex-row justify-between items-center">
-            <Text className="font-bold text-onyx text-lg">Total</Text>
-            <Text className="font-bold text-gold text-xl">${order.total_price.toFixed(2)}</Text>
-          </View>
         </View>
 
-        {/* SECTION 3: DELIVERY INFO */}
+        {/* Delivery Address */}
         <View className="bg-white p-6">
           <Text className="text-lg font-bold text-onyx mb-4">Delivery Details</Text>
           <View className="flex-row items-start">
             <MapPin size={20} color="#D4AF37" className="mt-0.5 mr-3" />
             <View>
               <Text className="text-onyx font-medium">Delivery Address</Text>
-              <Text className="text-gray-500 mt-1">
-                {order.delivery_address || "No address provided"}
-              </Text>
+              <Text className="text-gray-500 mt-1">{order.delivery_address || "No address provided"}</Text>
             </View>
           </View>
         </View>
