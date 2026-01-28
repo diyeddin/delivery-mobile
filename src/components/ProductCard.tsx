@@ -6,11 +6,12 @@ interface ProductProps {
   name: string;
   price: number;
   image_url?: string;
+  category: string;
   onPress: () => void;
   onAddToCart: () => void;
 }
 
-export default function ProductCard({ name, price, image_url, onPress, onAddToCart }: ProductProps) {
+export default function ProductCard({ name, price, image_url, category, onPress, onAddToCart }: ProductProps) {
   return (
     <TouchableOpacity 
       onPress={onPress}
@@ -32,7 +33,7 @@ export default function ProductCard({ name, price, image_url, onPress, onAddToCa
           {name}
         </Text>
         <Text className="text-gray-500 text-xs mb-3">
-          Luxury Item
+          {category}
         </Text>
 
         {/* Price & Add Button Row */}

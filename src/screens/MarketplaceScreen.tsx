@@ -135,19 +135,23 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           }
 
           renderItem={({ item }) => (
-            <ProductCard 
-              name={item.name}
-              price={item.price}
-              image_url={item.image_url}
-              onPress={() => navigation.navigate('ProductDetails', {
-                productId: item.id,
-                name: item.name,
-                price: item.price,
-                description: item.description ?? '',
-                image_url: item.image_url
-              })}
-              onAddToCart={() => handleAddToCart(item)}
-            />
+            <View style={{ width: "48%" }}>
+              <ProductCard 
+                name={item.name}
+                price={item.price}
+                image_url={item.image_url}
+                category={item.category ?? ''}
+                onPress={() => navigation.navigate('ProductDetails', {
+                  productId: item.id,
+                  name: item.name,
+                  price: item.price,
+                  description: item.description ?? '',
+                  category: item.category ?? '',
+                  image_url: item.image_url
+                })}
+                onAddToCart={() => handleAddToCart(item)}
+              />
+            </View>
           )}
           ListEmptyComponent={
             <View className="items-center mt-20">
