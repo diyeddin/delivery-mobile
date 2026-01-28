@@ -93,6 +93,8 @@ function MarketplaceStackNavigator() {
       
       {/* Allow jumping to a store if the product card links to it */}
       <MarketplaceStack.Screen name="StoreDetails" component={StoreDetailsScreen} />
+
+      <MarketplaceStack.Screen name="Addresses" component={AddressesScreen} />
     </MarketplaceStack.Navigator>
   );
 }
