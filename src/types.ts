@@ -30,6 +30,7 @@ export type MainTabParamList = {
 // Update the HomeStack (Keep it same, just ensure Root stuff is still there if needed)
 export type HomeStackParamList = {
   HomeMain: undefined;
+  MarketplaceMain: undefined;
   StoreDetails: { storeId: number; name: string };
   ProductDetails: { productId: number; name: string; price: number; description: string; image_url?: string };
   Login: undefined;

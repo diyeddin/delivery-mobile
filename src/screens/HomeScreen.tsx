@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
-  View, Text, FlatList, ActivityIndicator, TextInput, 
-  RefreshControl, Dimensions, Image, TouchableOpacity, ScrollView,
-  LayoutAnimation, Platform, UIManager 
+  View, Text, FlatList, ActivityIndicator, RefreshControl, Dimensions, 
+  Image, TouchableOpacity, LayoutAnimation, Platform, UIManager 
 } from 'react-native';
 import client from '../api/client';
 import StoreCard from '../components/StoreCard';
-import { Search, MapPin, ChevronDown, ShoppingBag, Truck, ChevronRight } from 'lucide-react-native'; 
+import DashboardHeader from '../components/DashboardHeader'; // <--- IMPORT
+import { ShoppingBag, Truck, ChevronDown, ChevronRight } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,6 +66,9 @@ export default function HomeScreen({ navigation }: Props) {
   const [addressLabel, setAddressLabel] = useState<string>("Deliver to");
   const [addressLine, setAddressLine] = useState<string>("Select Location");
 
+  // Search State (Added for DashboardHeader)
+  const [searchText, setSearchText] = useState('');
+
   const [isWidgetExpanded, setIsWidgetExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,16 +119,26 @@ export default function HomeScreen({ navigation }: Props) {
 
   // --- FILTER LOGIC ---
   useEffect(() => {
-    if (activeCategory === 'All') {
-      setFilteredStores(stores);
-    } else {
-      const filtered = stores.filter(store => 
+    let result = stores;
+
+    // 1. Filter by Category
+    if (activeCategory !== 'All') {
+      result = result.filter(store => 
         store.category?.toLowerCase() === activeCategory.toLowerCase() ||
         store.category?.toLowerCase().includes(activeCategory.toLowerCase())
       );
-      setFilteredStores(filtered);
     }
-  }, [activeCategory, stores]);
+
+    // 2. Filter by Search Text (Added logic since we added the state)
+    if (searchText) {
+      const lowerText = searchText.toLowerCase();
+      result = result.filter(store => 
+        store.name.toLowerCase().includes(lowerText)
+      );
+    }
+
+    setFilteredStores(result);
+  }, [activeCategory, searchText, stores]);
 
   // --- CAROUSEL LOGIC ---
   useEffect(() => {
@@ -155,7 +168,7 @@ export default function HomeScreen({ navigation }: Props) {
     switch (status) {
       case 'confirmed': return 1;
       case 'assigned': return 2;
-      case 'picked_up': return 3; // Added explicitly
+      case 'picked_up': return 3;
       case 'in_transit': return 3;
       default: return 0;
     }
@@ -207,20 +220,6 @@ export default function HomeScreen({ navigation }: Props) {
     </View>
   );
 
-  const renderCategories = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-      {CATEGORIES.map((cat) => (
-        <TouchableOpacity
-          key={cat.id}
-          onPress={() => setActiveCategory(cat.id)}
-          className={`mr-3 px-4 py-1.5 rounded-full border ${activeCategory === cat.id ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}
-        >
-          <Text className={`text-xs font-bold tracking-wide ${activeCategory === cat.id ? 'text-gold-400' : 'text-gray-500'}`}>{cat.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  );
-
   return (
     <SafeAreaView className="flex-1 bg-creme relative" edges={['top']}>
       {loading && !refreshing ? (
@@ -238,32 +237,25 @@ export default function HomeScreen({ navigation }: Props) {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" />}
             
             ListHeaderComponent={
-              <View className="pt-2">
-                {/* HEADER ROW */}
-                <View className="flex-row items-center justify-between mb-3">
-                  <View>
-                    <Text className="text-gold-500 text-[9px] font-bold uppercase tracking-[2px]">Golden Rose</Text>
-                    <Text className="text-xl text-onyx font-serif">Mall Delivery</Text>
-                  </View>
+              <View>
+                {/* 1. SHARED HEADER COMPONENT */}
+                <DashboardHeader 
+                  subtitle="Golden Rose"
+                  title="Mall Delivery"
+                  addressLabel={addressLabel}
+                  addressLine={addressLine}
+                  onAddressPress={() => navigation.navigate('Addresses')}
+                  
+                  searchText={searchText}
+                  onSearchChange={setSearchText}
+                  searchPlaceholder="Search stores..."
+                  
+                  categories={CATEGORIES}
+                  activeCategory={activeCategory}
+                  onCategoryPress={setActiveCategory}
+                />
 
-                  {/* REAL ADDRESS PILL */}
-                  <TouchableOpacity onPress={() => navigation.navigate('Addresses')} activeOpacity={0.7} className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
-                     <MapPin size={12} color="#D4AF37" />
-                     <View className="ml-1.5 mr-1">
-                        <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">{addressLabel}</Text>
-                        <Text className="text-[10px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text>
-                     </View>
-                     <ChevronDown size={12} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* SEARCH */}
-                <View className="flex-row items-center bg-white rounded-xl px-4 py-2 mb-4 shadow-sm border border-gray-100">
-                  <Search color="#9CA3AF" size={16} />
-                  <TextInput placeholder="Search stores..." placeholderTextColor="#9CA3AF" className="ml-2 flex-1 text-onyx text-sm p-0" />
-                </View>
-
-                {renderCategories()}
+                {/* 2. CAROUSEL (Specific to Home) */}
                 {renderCarousel()}
 
                 <View className="flex-row justify-between items-center mb-3">
@@ -297,7 +289,6 @@ export default function HomeScreen({ navigation }: Props) {
               <View className={`${isWidgetExpanded ? 'p-4 bg-white/5 mb-4' : ''} flex-row items-center justify-between`}>
                 <View className="flex-row items-center">
                   <View className="bg-gold-500 h-10 w-10 rounded-full items-center justify-center mr-3">
-                    {/* UPDATED LOGIC: Shows Truck for both 'in_transit' AND 'picked_up' */}
                     {isOrderOnTheWay(activeOrder.status) ? (
                         <Truck size={20} color="#1A1A1A" fill="#1A1A1A" />
                     ) : (
@@ -337,7 +328,6 @@ export default function HomeScreen({ navigation }: Props) {
                   </View>
                   <View className="h-4" />
                   
-                  {/* Takes the user to OrderDetailsScreen passing the ID */}
                   <TouchableOpacity 
                     onPress={() => navigation.navigate('OrderDetails', { orderId: activeOrder.id })} 
                     className="w-full bg-gold-500 py-3 rounded-xl items-center"

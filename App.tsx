@@ -1,27 +1,27 @@
 import './global.css';
-import React, { useEffect, useState } from 'react'; // <--- Added React hooks
-import { View, Text } from 'react-native'; // <--- Added View/Text
+import React, { useEffect, useState } from 'react'; 
+import { View, Text } from 'react-native'; 
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import NetInfo from '@react-native-community/netinfo'; // <--- Added NetInfo
-import { WifiOff } from 'lucide-react-native'; // <--- Added Icon
+import NetInfo from '@react-native-community/netinfo'; 
+import { WifiOff, Home, ShoppingBag, User, Search, Store } from 'lucide-react-native'; // <--- Added Search Icon
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { CartProvider, useCart } from './src/context/CartContext';
+import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+
+// Screens
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import MarketplaceScreen from './src/screens/MarketplaceScreen'; // <--- NEW IMPORT
 import CartScreen from './src/screens/CartScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import StoreDetailsScreen from './src/screens/StoreDetailsScreen';
 import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
-
-import { HomeStackParamList, ProfileStackParamList } from './src/types';
-import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
-import { Home, ShoppingBag, User } from 'lucide-react-native';
-import { CartProvider, useCart } from './src/context/CartContext';
 import CheckoutScreen from './src/screens/CheckoutScreen';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import OrdersScreen from './src/screens/OrdersScreen';
 import AddressesScreen from './src/screens/AddressesScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
@@ -30,14 +30,15 @@ import PaymentsScreen from './src/screens/PaymentsScreen';
 import AddAddressScreen from './src/screens/AddAddressScreen';
 import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 
+import { HomeStackParamList, ProfileStackParamList } from './src/types';
+
 // ---------------------------------------------------------
-// 1. NEW COMPONENT: Offline Banner
+// 1. OFFLINE BANNER
 // ---------------------------------------------------------
 function OfflineBanner() {
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    // Subscribe to network state updates
     const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(!!state.isConnected);
     });
@@ -59,14 +60,15 @@ function OfflineBanner() {
 }
 
 // ---------------------------------------------------------
-// 2. Existing Navigators
+// 2. NAVIGATORS
 // ---------------------------------------------------------
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const MarketplaceStack = createNativeStackNavigator<HomeStackParamList>(); // <--- NEW STACK
 const Tab = createBottomTabNavigator();
 
-// Define the Home Stack (Home -> Store -> Product)
+// --- HOME STACK ---
 function HomeStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -79,7 +81,23 @@ function HomeStackNavigator() {
   );
 }
 
-// Define the Profile Stack (Profile Menu -> Orders, Addresses, etc.)
+// --- NEW: MARKETPLACE STACK ---
+function MarketplaceStackNavigator() {
+  return (
+    <MarketplaceStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+      {/* The Main Marketplace Screen */}
+      <MarketplaceStack.Screen name="MarketplaceMain" component={MarketplaceScreen} />
+      
+      {/* Allow drilling down into Product Details from here */}
+      <MarketplaceStack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      
+      {/* Allow jumping to a store if the product card links to it */}
+      <MarketplaceStack.Screen name="StoreDetails" component={StoreDetailsScreen} />
+    </MarketplaceStack.Navigator>
+  );
+}
+
+// --- PROFILE STACK ---
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -95,7 +113,7 @@ function ProfileStackNavigator() {
   );
 }
 
-// Define the Main Tabs
+// --- MAIN TABS ---
 function AppTabs() {
   const { count } = useCart();
   return (
@@ -119,6 +137,16 @@ function AppTabs() {
           tabBarIcon: ({ color }) => <Home color={color} size={24} />
         }}
       />
+      
+      {/* NEW: MARKETPLACE TAB */}
+      <Tab.Screen
+        name="MarketplaceTab"
+        component={MarketplaceStackNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <Store color={color} size={24} />
+        }}
+      />
+
       <Tab.Screen
         name="Cart"
         component={CartScreen}
@@ -147,7 +175,7 @@ const LuxuryTheme = {
   },
 };
 
-// The Root Navigator (Handles Guest Mode & Modals)
+// --- ROOT NAVIGATOR ---
 function RootNavigator() {
   const { isLoading } = useAuth();
 
@@ -178,37 +206,23 @@ function RootNavigator() {
   );
 }
 
-// DEFINE TOAST THEME (Onyx & Gold)
+// --- TOAST CONFIG ---
 const toastConfig = {
   success: (props: any) => (
     <BaseToast
       {...props}
       style={{ borderLeftColor: '#D4AF37', backgroundColor: '#0F0F0F' }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#D4AF37'
-      }}
-      text2Style={{
-        fontSize: 14,
-        color: '#F5F5F0'
-      }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#D4AF37' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
     />
   ),
   error: (props: any) => (
     <ErrorToast
       {...props}
       style={{ borderLeftColor: '#EF4444', backgroundColor: '#0F0F0F' }}
-      text1Style={{
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#EF4444' 
-      }}
-      text2Style={{
-        fontSize: 14,
-        color: '#F5F5F0'
-      }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#EF4444' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
     />
   )
 };
@@ -225,10 +239,7 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <StatusBar style="dark" />
-        
-        {/* 3. Inject Offline Banner at the Top Level */}
         <OfflineBanner />
-        
         <RootNavigator />
         <Toast config={toastConfig} topOffset={75} />
       </CartProvider>
