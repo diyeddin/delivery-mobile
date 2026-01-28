@@ -15,40 +15,47 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
   return (
     <TouchableOpacity 
       onPress={onPress}
-      activeOpacity={1}
-      className="mb-6 bg-onyx rounded-2xl overflow-hidden border border-white/10 shadow-lg"
+      activeOpacity={0.9}
+      // REMOVED mb-6 (handled by grid gap now)
+      // Added flex-1 to fill the grid column
+      className="flex-1 bg-onyx rounded-xl overflow-hidden border border-white/10 shadow-sm"
     >
-      {/* Store Image */}
-      <View className="h-40 w-full bg-gray-800">
+      {/* Store Image - Reduced height for compact grid (h-32) */}
+      <View className="h-32 w-full bg-gray-800 relative">
         <Image 
           source={{ uri: image_url || 'https://via.placeholder.com/400x200' }} 
-          className="w-full h-full opacity-80"
+          className="w-full h-full opacity-90"
           resizeMode="cover"
         />
-        {/* Category Badge */}
-        <View className="absolute top-3 left-3 bg-gold-500/90 px-3 py-1 rounded-full">
-          <Text className="text-onyx text-xs font-bold uppercase tracking-wider">
+        {/* Compact Category Badge */}
+        <View className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
+          <Text className="text-white/[0.9] text-[10px] font-bold uppercase tracking-wide">
             {category}
           </Text>
         </View>
       </View>
 
       {/* Content */}
-      <View className="p-4">
-        <View className="flex-row justify-between items-start">
-          <View>
-            <Text className="text-xl text-white font-serif mb-1">{name}</Text>
-            <View className="flex-row items-center">
-              <MapPin size={14} color="#6B7280" />
-              <Text className="text-gray-400 text-xs ml-1">Grand Mall, Level 1</Text>
-            </View>
-          </View>
-          
+      <View className="p-3">
+        <View className="flex-row justify-between items-start mb-1">
+          <Text 
+            className="text-base text-white font-serif flex-1 mr-1" 
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
           {/* Rating */}
-          <View className="flex-row items-center bg-white/5 px-2 py-1 rounded-lg">
-            <Star size={14} color="#D4AF37" fill="#D4AF37" />
-            <Text className="text-gold-400 font-bold ml-1 text-xs">{rating}</Text>
+          <View className="flex-row items-center bg-white/10 px-1.5 py-0.5 rounded">
+            <Star size={10} color="#D4AF37" fill="#D4AF37" />
+            <Text className="text-gold-400 font-bold ml-1 text-[10px]">{rating}</Text>
           </View>
+        </View>
+        
+        <View className="flex-row items-center">
+          <MapPin size={12} color="#6B7280" />
+          <Text className="text-gray-400 text-[10px] ml-1" numberOfLines={1}>
+            Level 1
+          </Text>
         </View>
       </View>
     </TouchableOpacity>

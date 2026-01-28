@@ -35,4 +35,7 @@ export type HomeStackParamList = {
   Login: undefined;
   Checkout: undefined;
   MainTabs: { screen?: keyof MainTabParamList } | undefined;
+  OrderDetails: { orderId: number };
+  Addresses: undefined; // will be deprecated
+
 };
