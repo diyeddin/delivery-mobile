@@ -17,6 +17,7 @@ interface Product {
   price: number;
   image_url?: string;
   description?: string;
+  category?: string;
 }
 
 export default function StoreDetailsScreen({ route, navigation }: Props) {
@@ -99,10 +100,13 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
           }
 
           renderItem={({ item }) => (
+            <View style={{ width: '48%' }}>
             <ProductCard 
               name={item.name}
               price={item.price}
               image_url={item.image_url}
+              category={item.category ?? ''}
+              
               onPress={() => navigation.navigate('ProductDetails', {
                 productId: item.id,
                 name: item.name,
@@ -125,6 +129,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
                 });
               }}
             />
+            </View>
           )}
           ListEmptyComponent={
             // Center the empty text properly

@@ -6,6 +6,8 @@ import client from '../api/client';
 import ProductCard from '../components/ProductCard';
 import DashboardHeader from '../components/DashboardHeader'; // <--- NEW IMPORT
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { useCart } from '../context/CartContext';
 
 // --- MOCK CATEGORIES ---
 const CATEGORIES = [
@@ -37,6 +39,9 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+
+  const { addToCart } = useCart();
+  
 
   const fetchData = async () => {
     try {
@@ -149,7 +154,21 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
                   category: item.category ?? '',
                   image_url: item.image_url
                 })}
-                onAddToCart={() => handleAddToCart(item)}
+                onAddToCart={() => {
+                  addToCart({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    image_url: item.image_url
+                  });
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Added to Bag',
+                    text2: `${item.name} has been added to your cart.`,
+                    visibilityTime: 3000,
+                  });
+                }}
+                
               />
             </View>
           )}

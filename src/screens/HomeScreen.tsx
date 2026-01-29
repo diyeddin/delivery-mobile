@@ -214,7 +214,8 @@ export default function HomeScreen({ navigation }: Props) {
       />
       <View className="flex-row justify-center mt-3 space-x-2">
         {PROMOS.map((_, index) => (
-          <View key={index} className={`h-1.5 rounded-full transition-all ${index === activeSlide ? 'w-6 bg-gold-500' : 'w-1.5 bg-gray-600'}`} />
+          <View key={index} className={`h-1.5 rounded-full transition-all mx-0.5 ${index === activeSlide ? 'w-6 bg-gold-500' : 'w-1.5 bg-gray-600'}`} />
+
         ))}
       </View>
     </View>
