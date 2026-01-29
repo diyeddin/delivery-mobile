@@ -42,56 +42,48 @@ export default function DashboardHeader({
   onCategoryPress,
 }: DashboardHeaderProps) {
   return (
-    <View className="pt-2">
-      {/* HEADER ROW */}
-      <View className="flex-row items-center justify-between mb-3">
-        <View>
-          <Text className="text-gold-500 text-[9px] font-bold uppercase tracking-[2px]">
-            {subtitle}
-          </Text>
-          <Text className="text-xl text-onyx font-serif">
-            {title}
-          </Text>
-        </View>
+    <View className="pt-3">
 
-        {/* ADDRESS PILL */}
+      {/* SEARCH BAR */}
+      <View className="flex-row items-center mb-2 gap-1">
+        {/* PILL 1: SEARCH BAR (Takes remaining space) */}
+        <View className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2 shadow-sm border border-gray-100">
+          <Search color="#9CA3AF" size={16} />
+          <TextInput 
+            placeholder={searchPlaceholder}
+            placeholderTextColor="#9CA3AF"
+            className="ml-2 flex-1 text-onyx text-sm p-0"
+            value={searchText}
+            onChangeText={onSearchChange}
+          />
+        </View>
+        
+        {/* PILL 2: ADDRESS (Side by side) */}
         <TouchableOpacity 
           onPress={onAddressPress} 
           activeOpacity={0.7} 
-          className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100"
+          className="flex-row items-center bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100"
         >
-           <MapPin size={12} color="#D4AF37" />
-           <View className="ml-1.5 mr-1">
+            <MapPin size={12} color="#D4AF37" />
+            <View className="ml-1.5 mr-1">
               <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">{addressLabel}</Text>
-              <Text className="text-[10px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text>
-           </View>
-           <ChevronDown size={12} color="#9CA3AF" />
+              {/* <Text className="text-[6px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text> */}
+            </View>
+            <ChevronDown size={12} color="#9CA3AF" />
         </TouchableOpacity>
-      </View>
-
-      {/* SEARCH BAR */}
-      <View className="flex-row items-center bg-white rounded-xl px-4 py-2 mb-4 shadow-sm border border-gray-100">
-        <Search color="#9CA3AF" size={16} />
-        <TextInput 
-          placeholder={searchPlaceholder}
-          placeholderTextColor="#9CA3AF"
-          className="ml-2 flex-1 text-onyx text-sm p-0"
-          value={searchText}
-          onChangeText={onSearchChange}
-        />
       </View>
 
       {/* CATEGORIES */}
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        className="mb-4"
+        className="mb-2"
       >
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
             onPress={() => onCategoryPress(cat.id)}
-            className={`mr-3 px-4 py-1.5 rounded-full border ${
+            className={`mr-1 px-4 py-1.5 rounded-full border ${
               activeCategory === cat.id 
                 ? 'bg-onyx border-onyx' 
                 : 'bg-white border-gray-200'

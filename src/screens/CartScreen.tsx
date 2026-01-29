@@ -81,13 +81,13 @@ export default function CartScreen({ navigation }: any) {
               </View>
 
               {/* Quantity Controls (Right Side) */}
-              <View className="flex-row items-center bg-gray-50 rounded-lg border border-gray-200">
-                {/* Decrease Button */}
+              <View className="flex-column items-center bg-gray-50 rounded-lg border border-gray-200">
+                {/* Increase Button (Reuse addToCart) */}
                 <TouchableOpacity 
-                  onPress={() => decreaseCount(item.id)}
+                  onPress={() => addToCart(item)}
                   className="p-2"
                 >
-                  <Minus size={16} color="#0F0F0F" />
+                  <Plus size={12} color="#0F0F0F" />
                 </TouchableOpacity>
 
                 {/* Number */}
@@ -95,13 +95,14 @@ export default function CartScreen({ navigation }: any) {
                   {item.quantity}
                 </Text>
 
-                {/* Increase Button (Reuse addToCart) */}
+                {/* Decrease Button */}
                 <TouchableOpacity 
-                  onPress={() => addToCart(item)}
+                  onPress={() => decreaseCount(item.id)}
                   className="p-2"
                 >
-                  <Plus size={16} color="#0F0F0F" />
+                  <Minus size={12} color="#0F0F0F" />
                 </TouchableOpacity>
+
               </View>
             </View>
           )}

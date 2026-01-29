@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  View, Text, FlatList, ActivityIndicator, RefreshControl 
-} from 'react-native';
+import { View } from 'react-native';
 import client from '../api/client';
-import ProductCard from '../components/ProductCard';
-import DashboardHeader from '../components/DashboardHeader'; // <--- NEW IMPORT
+import DashboardHeader from '../components/DashboardHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useCart } from '../context/CartContext';
+import ProductGrid from '../components/ProductGrid'; // <--- NEW COMPONENT
 
 // --- MOCK CATEGORIES ---
 const CATEGORIES = [
@@ -41,7 +39,6 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const [activeCategory, setActiveCategory] = useState('All');
 
   const { addToCart } = useCart();
-  
 
   const fetchData = async () => {
     try {
@@ -98,87 +95,62 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     fetchData();
   }, []);
 
-  const handleAddToCart = (item: Product) => {
-    console.log("Adding to cart:", item.name);
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
-      {loading && !refreshing ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredProducts}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
-          
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" />
-          }
+      
+      {/* FIXED HEADER */}
+      <View className="px-6 z-10" style={{ paddingHorizontal: 16 }} >
+        <DashboardHeader 
+          subtitle="Browse"
+          title="Marketplace"
+          addressLabel={addressLabel}
+          addressLine={addressLine}
+          onAddressPress={() => navigation.navigate('Addresses')}
 
-          ListHeaderComponent={
-            // --- NEW SHARED HEADER ---
-            <DashboardHeader 
-              subtitle="Browse"
-              title="Marketplace"
-              addressLabel={addressLabel}
-              addressLine={addressLine}
-              onAddressPress={() => navigation.navigate('Addresses')}
-              
-              searchText={searchText}
-              onSearchChange={setSearchText}
-              searchPlaceholder="Search products..."
-              
-              categories={CATEGORIES}
-              activeCategory={activeCategory}
-              onCategoryPress={setActiveCategory}
-            />
-          }
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          searchPlaceholder="Search products..."
 
-          renderItem={({ item }) => (
-            <View style={{ width: "48%" }}>
-              <ProductCard 
-                name={item.name}
-                price={item.price}
-                image_url={item.image_url}
-                category={item.category ?? ''}
-                onPress={() => navigation.navigate('ProductDetails', {
-                  productId: item.id,
-                  name: item.name,
-                  price: item.price,
-                  description: item.description ?? '',
-                  category: item.category ?? '',
-                  image_url: item.image_url
-                })}
-                onAddToCart={() => {
-                  addToCart({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    image_url: item.image_url
-                  });
-                  Toast.show({
-                    type: 'success',
-                    text1: 'Added to Bag',
-                    text2: `${item.name} has been added to your cart.`,
-                    visibilityTime: 3000,
-                  });
-                }}
-                
-              />
-            </View>
-          )}
-          ListEmptyComponent={
-            <View className="items-center mt-20">
-               <Text className="text-gray-400">No products found.</Text>
-            </View>
-          }
+          categories={CATEGORIES}
+          activeCategory={activeCategory}
+          onCategoryPress={setActiveCategory}
         />
-      )}
+      </View>
+
+      {/* REUSABLE PRODUCT GRID */}
+      <ProductGrid
+        products={filteredProducts}
+        isLoading={loading}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        
+        // Align grid with header: 16px header padding - 8px item padding = 8px container padding
+        contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 20 }}
+        
+        onProductPress={(item) => navigation.navigate('ProductDetails', {
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          description: item.description ?? '',
+          category: item.category ?? '',
+          image_url: item.image_url
+        })}
+        
+        onAddToCart={(item) => {
+          addToCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image_url: item.image_url
+          });
+          Toast.show({
+            type: 'success',
+            text1: 'Added to Bag',
+            text2: `${item.name} has been added to your cart.`,
+            visibilityTime: 3000,
+          });
+        }}
+      />
     </SafeAreaView>
   );
 }
