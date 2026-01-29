@@ -13,11 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
+// if (Platform.OS === 'android') {
+//   if (UIManager.setLayoutAnimationEnabledExperimental) {
+//     UIManager.setLayoutAnimationEnabledExperimental(true);
+//   }
+// }
 
 // --- MOCK DATA ---
 const PROMOS = [
