@@ -46,6 +46,7 @@ interface Store {
   name: string;
   description: string;
   category: string;
+  image_url?: string;
 }
 
 interface ActiveOrder {
@@ -273,6 +274,7 @@ export default function HomeScreen({ navigation }: Props) {
                   id={item.id}
                   name={item.name}
                   category={item.category || "Luxury"} 
+                  image_url={item.image_url}
                   onPress={() => navigation.navigate('StoreDetails', { storeId: item.id, name: item.name })}
                 />
               </View>

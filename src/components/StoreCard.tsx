@@ -23,7 +23,7 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
       {/* Store Image - Reduced height for compact grid (h-32) */}
       <View className="h-32 w-full bg-gray-800 relative">
         <Image 
-          source={{ uri: image_url || 'https://via.placeholder.com/400x200' }} 
+          source={{ uri: image_url }} 
           className="w-full h-full opacity-90"
           resizeMode="cover"
         />
