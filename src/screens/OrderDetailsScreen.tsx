@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Check, MapPin, ShoppingBag } from 'lucide-react-native';
+import { ArrowLeft, Check, MapPin, ShoppingBag, Store } from 'lucide-react-native';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
-import * as SecureStore from 'expo-secure-store'; // <--- 1. IMPORT SECURE STORE
+import * as SecureStore from 'expo-secure-store';
 
 // --- CONFIG: WebSocket URL ---
 // Android Emulator: 10.0.2.2
@@ -36,36 +36,21 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
     fetchOrderDetails();
   }, []);
 
-  // 2. WebSocket Listener (Real-Time Updates with Auth)
+  // 2. WebSocket Listener
   useEffect(() => {
     let ws: WebSocket | null = null;
 
     const connectWebSocket = async () => {
         try {
-            // A. Get Token from SecureStore
             const token = await SecureStore.getItemAsync('token');
-            
-            if (!token) {
-                console.log("❌ No token found in SecureStore, cannot connect to WS");
-                return;
-            }
+            if (!token) return;
 
-            // B. Attach Token to URL
             const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
-            console.log("Connecting WS (Status Only):", url);
-            
             ws = new WebSocket(url);
-
-            ws.onopen = () => {
-                console.log("✅ WS Connected");
-            };
 
             ws.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
-                    console.log("📩 WS Message:", data);
-
-                    // Only listen for status updates (Safe Version)
                     if (data.type === 'status_update') {
                         setOrder((prev: any) => prev ? ({ ...prev, status: data.status }) : prev);
                     }
@@ -73,16 +58,6 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
                     console.log("WS Parse Error", err);
                 }
             };
-
-            ws.onerror = (e) => {
-                // Note: WebSocket errors are often generic on RN
-                console.log("❌ WS Error. Check server logs or network."); 
-            };
-
-            ws.onclose = (e) => {
-                console.log("WS Closed", e.code, e.reason);
-            };
-
         } catch (error) {
             console.error("Failed to setup WebSocket:", error);
         }
@@ -127,16 +102,21 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
+      
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5 bg-white">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-gray-100 rounded-full mr-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
-        <View>
+        <View className="flex-1">
           <Text className="text-lg font-serif text-onyx">Order #{order.id}</Text>
-          <Text className="text-xs text-gray-500">
-            {new Date(order.created_at).toLocaleString()}
-          </Text>
+          <View className="flex-row items-center">
+            {/* Store Name Display */}
+            <Text className="text-xs text-gray-500 font-bold mr-1">
+              From: {order.store?.name || "Store"}
+            </Text>
+            <Text className="text-xs text-gray-400">• {new Date(order.created_at).toLocaleString()}</Text>
+          </View>
         </View>
       </View>
 
@@ -148,7 +128,19 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
       >
         {/* Status Timeline */}
         <View className="bg-white p-6 mb-4">
-          <Text className="text-lg font-bold text-onyx mb-6">Order Status</Text>
+          <View className="flex-row justify-between items-center mb-6">
+             <Text className="text-lg font-bold text-onyx">Order Status</Text>
+             <View className={`px-2 py-1 rounded ${
+                order.status === 'delivered' ? 'bg-green-100' : 'bg-amber-100'
+             }`}>
+                <Text className={`text-xs font-bold capitalize ${
+                    order.status === 'delivered' ? 'text-green-700' : 'text-amber-800'
+                }`}>
+                    {order.status.replace('_', ' ')}
+                </Text>
+             </View>
+          </View>
+
           {isCanceled ? (
             <View className="bg-red-50 p-4 rounded-xl border border-red-100 flex-row items-center">
                 <Text className="text-red-800 font-bold">Order Canceled</Text>
@@ -185,6 +177,23 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
           )}
         </View>
 
+        {/* Store Info Card (Optional but nice) */}
+        {order.store && (
+            <View className="bg-white p-4 mb-4 flex-row items-center">
+                <View className="w-12 h-12 bg-gray-100 rounded-lg mr-3 overflow-hidden">
+                    {order.store.image_url ? (
+                        <Image source={{ uri: order.store.image_url }} className="w-full h-full" resizeMode="cover" />
+                    ) : (
+                        <View className="w-full h-full items-center justify-center"><Store size={20} color="#9CA3AF" /></View>
+                    )}
+                </View>
+                <View>
+                    <Text className="text-sm font-bold text-onyx">{order.store.name}</Text>
+                    <Text className="text-xs text-gray-500">Store Partner</Text>
+                </View>
+            </View>
+        )}
+
         {/* Items List */}
         <View className="bg-white p-6 mb-4">
           <Text className="text-lg font-bold text-onyx mb-4">Items</Text>
@@ -195,13 +204,23 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
                   <ShoppingBag size={18} color="#9CA3AF" />
                 </View>
                 <View>
-                  <Text className="text-onyx font-medium">{item.product_name || `Item #${item.product_id}`}</Text>
+                  {/* Robust Name Check */}
+                  <Text className="text-onyx font-medium">
+                    {item.product?.name || `Item #${item.product_id}`}
+                  </Text>
                   <Text className="text-gray-400 text-xs">Qty: {item.quantity}</Text>
                 </View>
               </View>
               <Text className="font-bold text-onyx">${item.price_at_purchase.toFixed(2)}</Text>
             </View>
           ))}
+          
+          <View className="h-[1px] bg-gray-100 my-4" />
+          
+          <View className="flex-row justify-between items-center">
+             <Text className="font-bold text-onyx text-base">Total</Text>
+             <Text className="font-bold text-onyx text-xl">${order.total_price.toFixed(2)}</Text>
+          </View>
         </View>
 
         {/* Delivery Address */}

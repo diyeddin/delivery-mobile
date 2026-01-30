@@ -5,7 +5,7 @@ import {
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
-import { ShoppingBag, Truck, ChevronDown } from 'lucide-react-native'; 
+import { ShoppingBag, Truck, ChevronDown, Check, MapPin, User, Package } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,9 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
 
 // 1. Constants for Carousel
-const GAP = 12; // The spacing between slides
-const CARD_WIDTH = width - 32; // Width of the card (Screen - 32px parent padding)
-const SNAP_INTERVAL = CARD_WIDTH + GAP; // The total width to snap (Card + Gap)
+const GAP = 12; 
+const CARD_WIDTH = width - 32; 
+const SNAP_INTERVAL = CARD_WIDTH + GAP; 
 
 const PROMOS = [
   { id: 1, title: 'Summer Collection', subtitle: 'New Arrivals', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop' },
@@ -30,6 +30,14 @@ const CATEGORIES = [
   { id: 'Electronics', label: 'Tech' },
   { id: 'Jewelry', label: 'Jewelry' },
   { id: 'Home', label: 'Home' },
+];
+
+// --- TIMELINE CONFIG ---
+const TIMELINE_STEPS = [
+    { label: 'Confirmed', icon: ShoppingBag, statusMatch: ['pending', 'confirmed'] },
+    { label: 'Driver', icon: User, statusMatch: ['assigned'] },
+    { label: 'On Way', icon: Truck, statusMatch: ['picked_up', 'in_transit'] },
+    { label: 'Arriving', icon: MapPin, statusMatch: ['delivered'] },
 ];
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
@@ -50,6 +58,7 @@ interface ActiveOrder {
   id: number;
   status: string;
   total_price: number;
+  store?: { name: string }; // <--- Added Store Name support
   items: any[];
 }
 
@@ -88,10 +97,35 @@ export default function HomeScreen({ navigation }: Props) {
       setFilteredStores(storeRes.data);
 
       const orderRes = await client.get('/orders/me'); 
-      const current = orderRes.data.find((o: ActiveOrder) => 
-        ['confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
+      // 1. Filter: Get ONLY active orders (ignore delivered/canceled)
+      const activeList = orderRes.data.filter((o: ActiveOrder) => 
+        ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
       );
-      setActiveOrder(current || null);
+
+      // 2. Sort: Rank them by "Excitement Level"
+      // This helper calculates the score
+      const getStatusScore = (status: string) => {
+          switch (status) {
+              case 'in_transit': return 5; // Highest priority
+              case 'picked_up': return 4;
+              case 'assigned': return 3;
+              case 'confirmed': return 2;
+              case 'pending': return 1;
+              default: return 0;
+          }
+      };
+
+      if (activeList.length > 0) {
+          // Sort descending (Highest score first)
+          activeList.sort((a: ActiveOrder, b: ActiveOrder) => {
+              return getStatusScore(b.status) - getStatusScore(a.status);
+          });
+          
+          // Set the winner
+          setActiveOrder(activeList[0]);
+      } else {
+          setActiveOrder(null);
+      }
 
     } catch (error) {
       console.error("Failed to fetch home data:", error);
@@ -146,48 +180,41 @@ export default function HomeScreen({ navigation }: Props) {
       case 'assigned': return 'Driver assigned';
       case 'picked_up': return 'Heading to you';
       case 'in_transit': return 'Arriving soon';
+      case 'pending': return 'Waiting for store...';
       default: return 'Active Order';
     }
   };
 
-  // --- CAROUSEL (FIXED: NO SKIPPING) ---
-    const renderCarousel = () => (
+  // --- HELPER: Calculate current step index ---
+  const getCurrentStepIndex = (status: string) => {
+      if (status === 'delivered') return 3;
+      if (['picked_up', 'in_transit'].includes(status)) return 2;
+      if (['assigned'].includes(status)) return 1;
+      return 0; // pending, confirmed
+  };
+
+  const renderCarousel = () => (
       <View className="mb-6">
         <FlatList
           ref={carouselRef}
           data={PROMOS}
           horizontal
           pagingEnabled={false} 
-
-          // --- SNAP LOGIC ---
           snapToInterval={SNAP_INTERVAL} 
           snapToAlignment="start"
-
-          // FIX 1: Use 'fast' for snapping, but disable momentum so it won't skip items
           decelerationRate="fast" 
           disableIntervalMomentum={true}
-
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item.id.toString()}
-
-          // FIX 2: Reactive scrolling (updates dots immediately)
           onScroll={(event) => {
             const offsetX = event.nativeEvent.contentOffset.x;
-            // Use Math.round to find the closest slide index
             const index = Math.round(offsetX / SNAP_INTERVAL);
-            if (index !== activeSlide) {
-              setActiveSlide(index);
-            }
+            if (index !== activeSlide) setActiveSlide(index);
           }}
-          scrollEventThrottle={16} // 60fps updates
-
+          scrollEventThrottle={16} 
           renderItem={({ item, index }) => (
             <View 
-              style={{ 
-                width: CARD_WIDTH,
-                // Margin right for all except last
-                marginRight: index === PROMOS.length - 1 ? 0 : GAP 
-              }} 
+              style={{ width: CARD_WIDTH, marginRight: index === PROMOS.length - 1 ? 0 : GAP }} 
               className="h-40 rounded-2xl overflow-hidden relative"
             >
               <Image source={{ uri: item.image }} className="w-full h-full" resizeMode="cover" />
@@ -198,15 +225,13 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           )}
         />
-
-        {/* Dots Indicator */}
         <View className="flex-row justify-center mt-3 space-x-2">
           {PROMOS.map((_, index) => (
             <View key={index} className={`h-1.5 rounded-full transition-all mx-0.5 ${index === activeSlide ? 'w-6 bg-gold-500' : 'w-1.5 bg-gray-600'}`} />
           ))}
         </View>
       </View>
-    );
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-creme relative" edges={['top']}>
@@ -219,11 +244,9 @@ export default function HomeScreen({ navigation }: Props) {
           addressLabel={addressLabel}
           addressLine={addressLine}
           onAddressPress={() => navigation.navigate('Addresses')}
-
           searchText={searchText}
           onSearchChange={setSearchText}
           searchPlaceholder="Search stores..."
-
           categories={CATEGORIES}
           activeCategory={activeCategory}
           onCategoryPress={setActiveCategory}
@@ -237,8 +260,6 @@ export default function HomeScreen({ navigation }: Props) {
         refreshing={refreshing}
         onRefresh={onRefresh}
         onStorePress={(store) => navigation.navigate('StoreDetails', { storeId: store.id, name: store.name })}
-        
-        // Pass the Carousel and Title as the Header
         ListHeaderComponent={
           <View>
              {renderCarousel()}
@@ -254,40 +275,98 @@ export default function HomeScreen({ navigation }: Props) {
       {/* 3. ACTIVE ORDER WIDGET */}
       {activeOrder && (
         <TouchableOpacity 
-          activeOpacity={0.9}
+          activeOpacity={0.95}
           onPress={toggleWidget}
-          className={`absolute bottom-6 left-6 right-6 bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden ${isWidgetExpanded ? 'pb-4' : 'p-4'}`}
+          className={`absolute bottom-6 left-4 right-4 bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-black/50 ${isWidgetExpanded ? 'pb-5' : 'p-0'}`}
         >
-          <View className={`${isWidgetExpanded ? 'p-4 bg-white/5 mb-4' : ''} flex-row items-center justify-between`}>
-            <View className="flex-row items-center">
-              <View className="bg-gold-500 h-10 w-10 rounded-full items-center justify-center mr-3">
-                {['in_transit', 'picked_up'].includes(activeOrder.status) ? (
-                    <Truck size={20} color="#1A1A1A" fill="#1A1A1A" />
-                ) : (
-                    <ShoppingBag size={20} color="#1A1A1A" fill="#1A1A1A" />
-                )}
+          {/* Header Row (Always Visible) */}
+          <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
+            <View className="flex-row items-center flex-1">
+              {/* Pulsing Dot Indicator */}
+              <View className="relative mr-4">
+                 <View className="w-10 h-10 bg-gold-500/20 rounded-full items-center justify-center animate-pulse">
+                     <View className="w-6 h-6 bg-gold-500 rounded-full items-center justify-center shadow-lg shadow-gold-500/50">
+                        {['in_transit', 'picked_up'].includes(activeOrder.status) ? (
+                            <Truck size={12} color="#1A1A1A" fill="#1A1A1A" />
+                        ) : (
+                            <ShoppingBag size={12} color="#1A1A1A" fill="#1A1A1A" />
+                        )}
+                     </View>
+                 </View>
               </View>
+
               <View>
-                <Text className="text-gold-400 text-[10px] font-bold uppercase tracking-widest">
-                  {['in_transit', 'picked_up'].includes(activeOrder.status) ? 'On the way' : 'Active Order'}
+                {/* Store Name & Status Text */}
+                <Text className="text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                  {activeOrder.store?.name || "Active Order"}
                 </Text>
                 <Text className="text-white font-bold text-sm">
                   {getStatusText(activeOrder.status)}
                 </Text>
               </View>
             </View>
-            <View className="bg-white/10 p-2 rounded-full">
+
+            {/* Expand Icon */}
+            <View className="bg-white/10 p-2 rounded-full ml-4">
               <ChevronDown size={16} color="#D4AF37" style={{ transform: [{ rotate: isWidgetExpanded ? '0deg' : '-90deg' }]}} />
             </View>
           </View>
 
+          {/* Expanded Content: Timeline */}
           {isWidgetExpanded && (
-            <View className="px-4">
+            <View className="px-5 pt-2">
+              
+              {/* Timeline Container */}
+              <View className="flex-row items-center justify-between mt-2 mb-6 relative">
+                 {/* Background Line */}
+                 <View className="absolute top-[14px] left-4 right-4 h-[2px] bg-white/10 z-0" />
+                 
+                 {/* Progress Line (Gold) */}
+                 <View 
+                    className="absolute top-[14px] left-4 h-[2px] bg-gold-500 z-0" 
+                    style={{ 
+                        width: `${(getCurrentStepIndex(activeOrder.status) / (TIMELINE_STEPS.length - 1)) * 90}%` 
+                    }} 
+                 />
+
+                 {/* Steps */}
+                 {TIMELINE_STEPS.map((step, index) => {
+                     const currentIndex = getCurrentStepIndex(activeOrder.status);
+                     const isActive = index <= currentIndex;
+                     const isCurrent = index === currentIndex;
+
+                     return (
+                         <View key={index} className="items-center z-10" style={{ width: 60 }}>
+                             {/* Icon Circle */}
+                             <View className={`w-8 h-8 rounded-full items-center justify-center border-2 mb-2 ${
+                                 isActive 
+                                    ? 'bg-onyx border-gold-500' 
+                                    : 'bg-onyx border-gray-600'
+                             }`}>
+                                 {isActive ? (
+                                     <step.icon size={12} color="#D4AF37" />
+                                 ) : (
+                                     <View className="w-2 h-2 rounded-full bg-gray-600" />
+                                 )}
+                             </View>
+                             
+                             {/* Label */}
+                             <Text className={`text-[10px] font-bold ${
+                                 isActive ? 'text-white' : 'text-gray-600'
+                             }`}>
+                                 {step.label}
+                             </Text>
+                         </View>
+                     );
+                 })}
+              </View>
+
+              {/* Action Button */}
               <TouchableOpacity 
                 onPress={() => navigation.navigate('OrderDetails', { orderId: activeOrder.id })} 
-                className="w-full bg-gold-500 py-3 rounded-xl items-center mt-4"
+                className="w-full bg-gold-500 py-3 rounded-xl items-center shadow-lg shadow-gold-500/20 active:opacity-90"
               >
-                <Text className="text-onyx font-bold uppercase tracking-wider text-xs">Track on Map</Text>
+                <Text className="text-onyx font-bold uppercase tracking-wider text-xs">View Order Details</Text>
               </TouchableOpacity>
             </View>
           )}

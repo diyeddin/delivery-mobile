@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Package, Clock, ChevronRight, Store } from 'lucide-react-native';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
@@ -10,36 +10,70 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'Orders'>;
 
 interface Order {
   id: number;
+  group_id?: string;
   created_at: string;
   total_price: number;
   status: string;
+  store: { name: string; image_url?: string }; 
+  items: any[];
+}
+
+// Visual "Card" Interface
+interface OrderGroup {
+  groupId: string;
+  createdAt: string;
+  totalPrice: number;
+  orders: Order[];
 }
 
 export default function OrdersScreen({ navigation }: Props) {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
 
-  // Fetch orders when screen comes into focus
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchOrders();
-    });
+    const unsubscribe = navigation.addListener('focus', fetchOrders);
     return unsubscribe;
   }, [navigation]);
 
   const fetchOrders = async () => {
     try {
       const res = await client.get('/orders/me/');
-      setOrders(res.data);
+      groupOrders(res.data);
     } catch (error) {
       console.error("Failed to load orders", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  // --- LOGIC: Turn [Order1, Order2] -> [GroupA(Order1, Order2)] ---
+  const groupOrders = (flatOrders: Order[]) => {
+    const groups: Record<string, OrderGroup> = {};
+
+    flatOrders.forEach(order => {
+      // If group_id exists, use it. If not (old orders), use their own ID.
+      const key = order.group_id || `single-${order.id}`;
+
+      if (!groups[key]) {
+        groups[key] = {
+          groupId: key,
+          createdAt: order.created_at,
+          totalPrice: 0,
+          orders: [],
+        };
+      }
+      groups[key].orders.push(order);
+      groups[key].totalPrice += order.total_price;
+    });
+
+    // Sort by Date Descending
+    const groupArray = Object.values(groups).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    setOrderGroups(groupArray);
   };
 
   const onRefresh = useCallback(() => {
@@ -52,20 +86,18 @@ export default function OrdersScreen({ navigation }: Props) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredOrders = orders.filter(order => {
-    const finishedStatuses = ['completed', 'delivered', 'canceled', 'refunded'];
-    const status = order.status ? order.status.toLowerCase() : '';
-    
-    if (activeTab === 'active') {
-      return !finishedStatuses.includes(status); 
-    } else {
-      return finishedStatuses.includes(status);
-    }
+  // Filter Logic
+  const filteredGroups = orderGroups.filter(group => {
+    // If ANY sub-order is active, the whole group is "Active"
+    // changed canceled to cancelled to match backend, please revert later
+    const isGroupActive = group.orders.some(o => 
+      !['completed', 'delivered', 'cancelled', 'refunded'].includes(o.status.toLowerCase())
+    );
+    return activeTab === 'active' ? isGroupActive : !isGroupActive;
   });
 
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
-      {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5 bg-creme z-10">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
           <ArrowLeft color="#0F0F0F" size={20} />
@@ -73,92 +105,74 @@ export default function OrdersScreen({ navigation }: Props) {
         <Text className="text-xl text-onyx font-serif">My Orders</Text>
       </View>
 
-      {/* Tab Buttons */}
       <View className="flex-row p-4 mx-2">
-        <TouchableOpacity 
-          onPress={() => setActiveTab('active')}
-          className={`flex-1 py-3 rounded-xl items-center justify-center mr-2 border ${
-            activeTab === 'active' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
-          }`}
-        >
-          <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>
-            Ongoing
-          </Text>
+        <TouchableOpacity onPress={() => setActiveTab('active')} className={`flex-1 py-3 rounded-xl items-center justify-center mr-2 border ${activeTab === 'active' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
+          <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>Ongoing</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          onPress={() => setActiveTab('past')}
-          className={`flex-1 py-3 rounded-xl items-center justify-center ml-2 border ${
-            activeTab === 'past' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
-          }`}
-        >
-          <Text className={`font-bold ${activeTab === 'past' ? 'text-white' : 'text-gray-400'}`}>
-            History
-          </Text>
+        <TouchableOpacity onPress={() => setActiveTab('past')} className={`flex-1 py-3 rounded-xl items-center justify-center ml-2 border ${activeTab === 'past' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
+          <Text className={`font-bold ${activeTab === 'past' ? 'text-white' : 'text-gray-400'}`}>History</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       {loading && !refreshing ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#D4AF37" size="large" />
-        </View>
+        <View className="flex-1 items-center justify-center"><ActivityIndicator color="#D4AF37" size="large" /></View>
       ) : (
         <FlatList
-          data={filteredOrders}
-          keyExtractor={(item) => item.id.toString()}
+          data={filteredGroups}
+          keyExtractor={(item) => item.groupId}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={['#D4AF37']} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" />}
           ListEmptyComponent={
             <View className="items-center mt-20 opacity-50">
               <Package size={64} color="#E5E7EB" />
-              <Text className="text-gray-400 mt-4 text-center font-serif text-lg">
-                No {activeTab} orders found.
-              </Text>
+              <Text className="text-gray-400 mt-4 font-serif text-lg">No {activeTab} orders found.</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
-              className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-4"
-            >
-              <View className="flex-row justify-between items-start mb-4">
+          renderItem={({ item: group }) => (
+            <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+              {/* Group Header */}
+              <View className="flex-row justify-between items-start mb-3 border-b border-gray-100 pb-3">
                 <View>
-                  <Text className="font-bold text-onyx text-lg">Order #{item.id}</Text>
+                  <Text className="font-bold text-onyx text-base">Order Bundle</Text>
                   <View className="flex-row items-center mt-1">
                     <Clock size={12} color="#9CA3AF" className="mr-1" />
-                    <Text className="text-gray-400 text-xs">{formatDate(item.created_at)}</Text>
+                    <Text className="text-gray-400 text-xs">{formatDate(group.createdAt)}</Text>
                   </View>
                 </View>
-                
-                {/* Chevron indicating Clickability */}
-                <ChevronRight size={20} color="#D1D5DB" />
+                <Text className="text-onyx font-serif font-bold text-lg">${group.totalPrice.toFixed(2)}</Text>
               </View>
 
-              <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-lg mb-3">
-                <Text className="text-xs text-gray-500 font-medium uppercase tracking-wider">Status</Text>
-                <View className={`px-2 py-1 rounded text-xs ${
-                   item.status === 'completed' || item.status === 'delivered' ? 'bg-green-100' : 
-                   item.status === 'canceled' ? 'bg-red-100' : 'bg-amber-100'
-                }`}>
-                   <Text className={`text-xs font-bold capitalize ${
-                      item.status === 'completed' || item.status === 'delivered' ? 'text-green-700' : 
-                      item.status === 'canceled' ? 'text-red-700' : 'text-amber-800'
-                   }`}>
-                     {item.status?.replace('_', ' ') || 'Processing'}
-                   </Text>
-                </View>
-              </View>
-
-              <View className="flex-row justify-between items-center">
-                <Text className="text-gray-400 text-xs uppercase font-bold tracking-widest">Total</Text>
-                <Text className="text-onyx font-serif font-bold text-xl">
-                  ${item.total_price?.toFixed(2) || "0.00"}
-                </Text>
-              </View>
-            </TouchableOpacity>
+              {/* Sub-Orders (One per Store) */}
+              {group.orders.map((subOrder, index) => (
+                <TouchableOpacity 
+                  key={subOrder.id}
+                  onPress={() => navigation.navigate('OrderDetails', { orderId: subOrder.id })}
+                  className={`flex-row justify-between items-center py-3 ${index !== group.orders.length -1 ? 'border-b border-gray-50' : ''}`}
+                >
+                  <View className="flex-row items-center flex-1">
+                    <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center mr-3">
+                      <Store size={14} color="#6B7280" />
+                    </View>
+                    <View>
+                       {/* Show Store Name instead of Order ID */}
+                       <Text className="font-bold text-gray-800 text-sm">
+                         {subOrder.store?.name || `Store Order #${subOrder.id}`}
+                       </Text>
+                       <View className={`self-start px-1.5 py-0.5 rounded mt-1 ${
+                          subOrder.status === 'delivered' ? 'bg-green-100' : 'bg-amber-100'
+                       }`}>
+                         <Text className={`text-[10px] font-bold capitalize ${
+                            subOrder.status === 'delivered' ? 'text-green-700' : 'text-amber-800'
+                         }`}>
+                           {subOrder.status.replace('_', ' ')}
+                         </Text>
+                       </View>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color="#D1D5DB" />
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
         />
       )}
