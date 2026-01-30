@@ -28,7 +28,7 @@ export default function StoreGrid({
   onRefresh,
   onStorePress,
   ListHeaderComponent,
-  contentPaddingBottom = 50
+  contentPaddingBottom = 100
 }: StoreGridProps) {
 
   if (isLoading && !refreshing) {

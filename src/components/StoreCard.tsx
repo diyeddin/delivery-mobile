@@ -18,7 +18,7 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
       activeOpacity={0.9}
       // REMOVED mb-6 (handled by grid gap now)
       // Added flex-1 to fill the grid column
-      className="flex-1 bg-onyx rounded-xl overflow-hidden border border-white shadow-sm"
+      className="flex-1 bg-onyx rounded-xl overflow-hidden border border-gray-100 shadow-sm"
     >
       {/* Store Image - Reduced height for compact grid (h-32) */}
       <View className="h-32 w-full bg-gray-800 relative">
