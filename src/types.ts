@@ -37,6 +37,7 @@ export type HomeStackParamList = {
   Checkout: undefined;
   MainTabs: { screen?: keyof MainTabParamList } | undefined;
   OrderDetails: { orderId: number };
-  Addresses: undefined; // will be deprecated
+  Addresses: undefined;
+  AddAddress: { addressToEdit?: Address } | undefined;
 
 };

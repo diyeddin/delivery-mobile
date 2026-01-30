@@ -76,8 +76,8 @@ export default function LoginScreen({ navigation }: Props) {
       </View>
 
       <View className="space-y-6">
-        <View>
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-2 ml-1">Email</Text>
+        <View className="mb-2">
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ml-1">Email</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Mail color="#9CA3AF" size={20} />
             <TextInput 
@@ -92,8 +92,8 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View>
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-2 ml-1">Password</Text>
+        <View className="mb-2">
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ml-1">Password</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Lock color="#9CA3AF" size={20} />
             <TextInput 
@@ -110,7 +110,7 @@ export default function LoginScreen({ navigation }: Props) {
         <TouchableOpacity 
           onPress={handleLogin}
           disabled={isSubmitting}
-          className="bg-gold-500 py-4 rounded-xl shadow-lg shadow-gold-500/20 flex-row justify-center items-center mt-4"
+          className="bg-gold-500 py-4 rounded-xl shadow-lg flex-row justify-center items-center mt-4"
         >
           {isSubmitting ? (
             <ActivityIndicator color="#0F0F0F" />

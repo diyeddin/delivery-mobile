@@ -9,6 +9,7 @@ import { ShoppingBag, Truck, ChevronDown, Check, MapPin, User, Package } from 'l
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -81,51 +82,69 @@ export default function HomeScreen({ navigation }: Props) {
 
   const fetchData = async () => {
     try {
-      try {
-        const addrRes = await client.get('/addresses/default');
-        if (addrRes.data) {
-          setAddressLabel(addrRes.data.label || "Deliver to");
-          const fullAddress = addrRes.data.address_line;
-          setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
-        }
-      } catch (addrErr: any) {
-        if (addrErr.response?.status !== 404) console.error("Address error:", addrErr);
+      // 1. SECURITY CHECK: Do we have a token?
+      const token = await SecureStore.getItemAsync('token'); // or your auth storage key
+      if (!token) {
+        // If logged out, just clear personal data and stop
+        setActiveOrder(null);
+        setAddressLabel("Welcome");
+        setAddressLine("Please login");
+        // We can still fetch public stores if your API allows it without auth
+        // If stores require auth too, return here.
       }
 
+      // 2. Fetch Personal Data (Only if logged in)
+      if (token) {
+        try {
+          const addrRes = await client.get('/addresses/default');
+          if (addrRes.data) {
+            setAddressLabel(addrRes.data.label || "Deliver to");
+            const fullAddress = addrRes.data.address_line;
+            setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
+          }
+        } catch (addrErr: any) {
+          // Ignore 401s (logged out) and 404s (no address)
+          if (addrErr.response?.status !== 404 && addrErr.response?.status !== 401) {
+             console.error("Address error:", addrErr);
+          }
+        }
+
+        try {
+          const orderRes = await client.get('/orders/me'); 
+          
+          // Filter & Sort Logic
+          const activeList = orderRes.data.filter((o: ActiveOrder) => 
+            ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
+          );
+
+          const getStatusScore = (status: string) => {
+              switch (status) {
+                  case 'in_transit': return 5;
+                  case 'picked_up': return 4;
+                  case 'assigned': return 3;
+                  case 'confirmed': return 2;
+                  case 'pending': return 1;
+                  default: return 0;
+              }
+          };
+
+          if (activeList.length > 0) {
+              activeList.sort((a: ActiveOrder, b: ActiveOrder) => getStatusScore(b.status) - getStatusScore(a.status));
+              setActiveOrder(activeList[0]);
+          } else {
+              setActiveOrder(null);
+          }
+        } catch (orderErr: any) {
+           // Silent fail on 401 so we don't spam console
+           if (orderErr.response?.status !== 401) console.error("Order fetch error", orderErr);
+        }
+      }
+
+      // 3. Fetch Public Data (Stores) - Assuming this is public
+      // If this requires login, move it inside the `if (token)` block
       const storeRes = await client.get('/stores/'); 
       setStores(storeRes.data);
       setFilteredStores(storeRes.data);
-
-      const orderRes = await client.get('/orders/me'); 
-      // 1. Filter: Get ONLY active orders (ignore delivered/canceled)
-      const activeList = orderRes.data.filter((o: ActiveOrder) => 
-        ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
-      );
-
-      // 2. Sort: Rank them by "Excitement Level"
-      // This helper calculates the score
-      const getStatusScore = (status: string) => {
-          switch (status) {
-              case 'in_transit': return 5; // Highest priority
-              case 'picked_up': return 4;
-              case 'assigned': return 3;
-              case 'confirmed': return 2;
-              case 'pending': return 1;
-              default: return 0;
-          }
-      };
-
-      if (activeList.length > 0) {
-          // Sort descending (Highest score first)
-          activeList.sort((a: ActiveOrder, b: ActiveOrder) => {
-              return getStatusScore(b.status) - getStatusScore(a.status);
-          });
-          
-          // Set the winner
-          setActiveOrder(activeList[0]);
-      } else {
-          setActiveOrder(null);
-      }
 
     } catch (error) {
       console.error("Failed to fetch home data:", error);
@@ -237,7 +256,7 @@ export default function HomeScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme relative" edges={['top']}>
       
       {/* 1. FIXED HEADER */}
-      <View className="px-6 z-10" style={{ paddingHorizontal: 16 }}>
+      <View className="px-6 z-9" style={{ paddingHorizontal: 16 }}>
         <DashboardHeader 
           subtitle="Golden Rose"
           title="Mall Delivery"
@@ -285,7 +304,7 @@ export default function HomeScreen({ navigation }: Props) {
               {/* Pulsing Dot Indicator */}
               <View className="relative mr-4">
                  <View className="w-10 h-10 bg-gold-500/20 rounded-full items-center justify-center animate-pulse">
-                     <View className="w-6 h-6 bg-gold-500 rounded-full items-center justify-center shadow-lg shadow-gold-500/50">
+                     <View className="w-6 h-6 bg-gold-500 rounded-full items-center justify-center shadow-lg">
                         {['in_transit', 'picked_up'].includes(activeOrder.status) ? (
                             <Truck size={12} color="#1A1A1A" fill="#1A1A1A" />
                         ) : (
@@ -308,7 +327,7 @@ export default function HomeScreen({ navigation }: Props) {
 
             {/* Expand Icon */}
             <View className="bg-white/10 p-2 rounded-full ml-4">
-              <ChevronDown size={16} color="#D4AF37" style={{ transform: [{ rotate: isWidgetExpanded ? '0deg' : '-90deg' }]}} />
+              <ChevronDown size={16} color="#D4AF37" style={{ transform: [{ rotate: isWidgetExpanded ? '0deg' : '180deg' }]}} />
             </View>
           </View>
 

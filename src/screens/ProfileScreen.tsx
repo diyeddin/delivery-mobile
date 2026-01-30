@@ -68,7 +68,7 @@ export default function ProfileScreen({ navigation }: Props) {
         <View className="bg-onyx/5 p-6 rounded-full mb-6">
           <UserIcon size={48} color="#0F0F0F" />
         </View>
-        <Text className="text-2xl font-serif text-onyx mb-2">Welcome, Guest</Text>
+        <Text className="text-2xl font-serif text-onyx mb-2 px-3">Welcome, Guest</Text>
         <Text className="text-gray-500 text-center mb-8">
           Log in to track your orders, save addresses, and access exclusive mall offers.
         </Text>

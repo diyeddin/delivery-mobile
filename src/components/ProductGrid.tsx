@@ -4,7 +4,7 @@ import { ShoppingBag } from 'lucide-react-native';
 import ProductCard from './ProductCard';
 
 // This must match the background color of your "Sheet" header in StoreDetailsScreen
-const SHEET_BG_COLOR = '#F9F8F6'; 
+// const SHEET_BG_COLOR = '##F5F5F0'; 
 
 interface Product {
   id: number;
@@ -61,7 +61,7 @@ export default function ProductGrid({
       
       // CRITICAL: This gives the grid rows a solid background. 
       // Without this, you see the banner image through the gaps as you scroll up.
-      columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR }}
+      columnWrapperStyle={{ backgroundColor: "bg-creme" }}
       
       onScroll={onScroll}
       scrollEventThrottle={16}
@@ -73,14 +73,14 @@ export default function ProductGrid({
         <RefreshControl 
           refreshing={refreshing} 
           onRefresh={onRefresh} 
-          tintColor="#D4AF37" 
+          tintColor="#D4AF37"
           progressViewOffset={refreshOffset} 
         />
       }
       
       renderItem={({ item }) => (
         // Ensure the item container is also solid to prevent banner bleed-through
-        <View style={{ width: '50%', padding: 8, backgroundColor: SHEET_BG_COLOR }}>
+        <View style={{ width: '50%', padding: 8, backgroundColor: "bg-creme" }}>
           <ProductCard 
             name={item.name}
             price={item.price}
@@ -96,7 +96,7 @@ export default function ProductGrid({
         // Empty state needs a solid background too
         <View 
           className="items-center justify-center pt-20 h-96" 
-          style={{ backgroundColor: SHEET_BG_COLOR }}
+          style={{ backgroundColor: "bg-creme" }}
         >
           <ShoppingBag size={48} color="#E5E7EB" />
           <Text className="text-gray-400 mt-4 font-serif">No products found.</Text>

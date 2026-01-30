@@ -65,7 +65,7 @@ function OfflineBanner() {
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
-const MarketplaceStack = createNativeStackNavigator<HomeStackParamList>(); // <--- NEW STACK
+const MarketplaceStack = createNativeStackNavigator<HomeStackParamList>(); // [TODO] maybe create a separate type later
 const Tab = createBottomTabNavigator();
 
 // --- HOME STACK ---
@@ -77,6 +77,7 @@ function HomeStackNavigator() {
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       <Stack.Screen name="Addresses" component={AddressesScreen} />
+      <Stack.Screen name="AddAddress" component={AddAddressScreen} />
     </Stack.Navigator>
   );
 }
@@ -95,6 +96,7 @@ function MarketplaceStackNavigator() {
       <MarketplaceStack.Screen name="StoreDetails" component={StoreDetailsScreen} />
 
       <MarketplaceStack.Screen name="Addresses" component={AddressesScreen} />
+      <MarketplaceStack.Screen name="AddAddress" component={AddAddressScreen} />
     </MarketplaceStack.Navigator>
   );
 }

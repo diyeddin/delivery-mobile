@@ -40,7 +40,7 @@ export default function CartScreen({ navigation }: any) {
         <View className="bg-onyx/5 p-6 rounded-full mb-6">
           <ShoppingBag size={48} color="#0F0F0F" />
         </View>
-        <Text className="text-2xl font-serif text-onyx mb-2">Your bag is empty</Text>
+        <Text className="text-2xl font-serif text-onyx mb-2 px-1">Your bag is empty</Text>
         <Text className="text-gray-500 text-center">
           Looks like you haven't found your perfect match yet.
         </Text>

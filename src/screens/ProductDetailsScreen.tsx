@@ -68,7 +68,6 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
             refreshing={refreshing} 
             onRefresh={onRefresh}
             tintColor="#D4AF37" // Gold
-            colors={['#D4AF37']}
           />
         }
       >

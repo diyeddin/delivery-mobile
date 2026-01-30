@@ -180,6 +180,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         ListFooterComponent={<View className="h-20" />}
         contentContainerStyle={{ 
           paddingBottom: 0, 
+          marginTop: 15,
           backgroundColor: 'transparent' 
         }}
         refreshing={refreshing}
