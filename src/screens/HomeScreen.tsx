@@ -244,7 +244,7 @@ export default function HomeScreen({ navigation }: Props) {
              {renderCarousel()}
              <View className="flex-row justify-between items-center mb-3">
                <Text className="text-base font-serif text-onyx">
-                 {activeCategory === 'All' ? 'All Boutiques' : `${activeCategory} Stores`}
+                 {activeCategory === 'All' ? 'All Shops' : `${activeCategory} Stores`}
                </Text>
              </View>
           </View>
