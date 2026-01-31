@@ -19,7 +19,7 @@ const STATUS_STEPS = [
   { key: 'assigned', label: 'Driver Assigned', desc: 'A driver is on the way to the store.' },
   { key: 'picked_up', label: 'Picked Up', desc: 'Driver has your order.' },
   { key: 'in_transit', label: 'In Transit', desc: 'Your order is on the way to you.' },
-  { key: 'delivered', label: 'Delivered', desc: 'Enjoy your meal!' },
+  { key: 'delivered', label: 'Delivered', desc: 'Your order has been delivered. Thank you for shopping with us!' },
 ];
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;

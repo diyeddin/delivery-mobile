@@ -90,6 +90,22 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
     <View>
       {/* 1. Transparent Spacer (Reveals Banner) */}
       <View style={{ height: BANNER_HEIGHT, backgroundColor: 'transparent' }} />
+
+      {/* 👇 NEW: Infinite Background Filler 
+          This sits behind the products and fills the gaps.
+          top: BANNER_HEIGHT - 24 (Matches the -mt-6 offset)
+      */}
+      <View 
+        style={{ 
+          position: 'absolute', 
+          top: BANNER_HEIGHT, 
+          left: 0, 
+          right: 0, 
+          height: 10000, // Massive height to cover the whole list
+          backgroundColor: SHEET_BG_COLOR,
+          zIndex: -1 // Behind content
+        }}
+      />
       
       {/* 2. Sheet Start (Solid Background) */}
       <View style={{ backgroundColor: SHEET_BG_COLOR }} className="-mt-6 rounded-t-3xl pt-2 pb-6 px-6 shadow-sm border-b border-gray-100">
@@ -180,7 +196,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         ListFooterComponent={<View className="h-20" />}
         contentContainerStyle={{ 
           paddingBottom: 0, 
-          marginTop: 15,
+          marginTop: 0,
           backgroundColor: 'transparent' 
         }}
         refreshing={refreshing}
