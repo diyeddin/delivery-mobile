@@ -39,6 +39,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const [searchText, setSearchText] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
+  const [isGuest, setIsGuest] = useState(true);
+
   const { addToCart } = useCart();
 
   const fetchData = async () => {
@@ -47,6 +49,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
       const token = await SecureStore.getItemAsync('token');
 
       if (token) {
+        setIsGuest(false);
         // --- LOGGED IN: Fetch User Address ---
         try {
           const addrRes = await client.get('/addresses/default');
@@ -65,6 +68,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         // --- LOGGED OUT: Reset Header UI ---
         setAddressLabel("Welcome");
         setAddressLine("Please login to set address");
+        setIsGuest(true);
       }
 
       // 2. Fetch Products (Public Access)
@@ -120,6 +124,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           title="Marketplace"
           addressLabel={addressLabel}
           addressLine={addressLine}
+          isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
 
           searchText={searchText}

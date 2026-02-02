@@ -79,6 +79,7 @@ export default function HomeScreen({ navigation }: Props) {
   
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<FlatList>(null);
+  const [isGuest, setIsGuest] = useState(true);
 
   const fetchData = async () => {
     try {
@@ -91,10 +92,12 @@ export default function HomeScreen({ navigation }: Props) {
         setAddressLine("Please login");
         // We can still fetch public stores if your API allows it without auth
         // If stores require auth too, return here.
+        setIsGuest(true);
       }
 
       // 2. Fetch Personal Data (Only if logged in)
       if (token) {
+        setIsGuest(false);
         try {
           const addrRes = await client.get('/addresses/default');
           if (addrRes.data) {
@@ -262,6 +265,7 @@ export default function HomeScreen({ navigation }: Props) {
           title="Mall Delivery"
           addressLabel={addressLabel}
           addressLine={addressLine}
+          isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
           searchText={searchText}
           onSearchChange={setSearchText}

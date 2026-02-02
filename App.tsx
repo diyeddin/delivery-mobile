@@ -212,6 +212,15 @@ function RootNavigator() {
 
 // --- TOAST CONFIG ---
 const toastConfig = {
+  info: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#7babf9', backgroundColor: '#0F0F0F' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#7babf9' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
+    />
+  ),
   success: (props: any) => (
     <BaseToast
       {...props}

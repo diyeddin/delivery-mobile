@@ -97,8 +97,8 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
               {/* Use state 'product' */}
               <Text className="text-3xl font-serif text-onyx mb-2">{product.name}</Text>
               <Text className="text-gray-500 text-xs uppercase tracking-widest font-bold">
-                Luxury Collection
-              </Text>
+                Luxury Collection 
+              </Text> {/* add category instead */}
             </View>
             <Text className="text-2xl text-gold-600 font-serif">
               ${product.price.toFixed(2)}
@@ -132,7 +132,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
               text2: `${product.name} has been added to your cart.`,
               visibilityTime: 3000,
             });
-            navigation.goBack(); 
+            // navigation.goBack(); 
           }}
         >
           <ShoppingBag color="white" size={20} className="mr-2" />

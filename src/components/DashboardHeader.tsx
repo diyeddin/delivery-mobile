@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Search, MapPin, ChevronDown } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 
 interface Category {
   id: string;
@@ -16,6 +17,7 @@ interface DashboardHeaderProps {
   addressLabel: string;
   addressLine: string;
   onAddressPress: () => void;
+  isGuest?: boolean;
 
   // Search Props
   searchText: string;
@@ -34,6 +36,7 @@ export default function DashboardHeader({
   addressLabel,
   addressLine,
   onAddressPress,
+  isGuest = false,
   searchText,
   onSearchChange,
   searchPlaceholder,
@@ -41,6 +44,18 @@ export default function DashboardHeader({
   activeCategory,
   onCategoryPress,
 }: DashboardHeaderProps) {
+  const handleAddressPress = () => {
+    if (isGuest) {
+      Toast.show({
+        type: 'info',
+        text1: 'Login Required',
+        text2: 'Please log in to change your address',
+      });
+      return;
+    }
+    onAddressPress();
+  };
+
   return (
     <View className="pt-3">
 
@@ -60,7 +75,7 @@ export default function DashboardHeader({
         
         {/* PILL 2: ADDRESS (Side by side) */}
         <TouchableOpacity 
-          onPress={onAddressPress} 
+          onPress={handleAddressPress} 
           activeOpacity={0.7} 
           className="flex-row items-center bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100"
         >

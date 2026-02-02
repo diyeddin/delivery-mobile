@@ -41,11 +41,11 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   });
   
   // Store name animation - fades out from sheet as we scroll
-  const sheetTitleOpacity = scrollY.interpolate({ 
-    inputRange: [BANNER_HEIGHT - 140, BANNER_HEIGHT - 100], 
-    outputRange: [1, 0], 
-    extrapolate: 'clamp' 
-  });
+  // const sheetTitleOpacity = scrollY.interpolate({ 
+  //   inputRange: [BANNER_HEIGHT - 140, BANNER_HEIGHT - 100], 
+  //   outputRange: [1, 0], 
+  //   extrapolate: 'clamp' 
+  // });
 
   const fetchData = useCallback(async () => {
     try {
@@ -120,11 +120,11 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
           </View>
           <View className="flex-1 pt-1">
             {/* Animated store name that fades out as we scroll */}
-            <Animated.View style={{ opacity: sheetTitleOpacity }}>
+            {/* <Animated.View style={{ opacity: sheetTitleOpacity }}> */}
               <Text className="text-2xl font-serif font-bold text-onyx" numberOfLines={2}>
                 {displayStoreName}
               </Text>
-            </Animated.View>
+            {/* </Animated.View> */}
             <View className="flex-row items-center gap-2 mt-2">
               <View className="bg-onyx/5 px-2 py-0.5 rounded-md">
                 <Text className="text-xs font-bold text-onyx uppercase tracking-wider">
