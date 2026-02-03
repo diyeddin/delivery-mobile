@@ -118,7 +118,7 @@ export default function CheckoutScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">Confirm Order</Text>
@@ -138,7 +138,7 @@ export default function CheckoutScreen({ navigation }: Props) {
             <ActivityIndicator size="small" color="#D4AF37" className="mb-6" />
         ) : address ? (
             <View className="bg-white p-4 rounded-xl flex-row items-center shadow-sm mb-6 border border-gray-100">
-            <View className="bg-gray-50 p-3 rounded-lg mr-4">
+            <View className="bg-gray-50 p-3 rounded-lg me-4">
                 <MapPin color="#0F0F0F" size={24} />
             </View>
             <View className="flex-1">
@@ -229,7 +229,7 @@ export default function CheckoutScreen({ navigation }: Props) {
             <ActivityIndicator color="white" />
           ) : (
             <>
-              <Text className="text-white font-bold text-lg mr-2 uppercase tracking-wider">
+              <Text className="text-white font-bold text-lg me-2 uppercase tracking-wider">
                 {paymentMethod === 'cash' ? 'Place Order' : 'Proceed to Pay'}
               </Text>
               <CheckCircle color="white" size={20} />

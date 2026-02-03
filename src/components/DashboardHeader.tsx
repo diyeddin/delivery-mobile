@@ -80,7 +80,7 @@ export default function DashboardHeader({
           className="flex-row items-center bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100"
         >
             <MapPin size={12} color="#D4AF37" />
-            <View className="ml-1.5 mr-1">
+            <View className="ml-1.5 me-1">
               <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">{addressLabel}</Text>
               {/* <Text className="text-[6px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text> */}
             </View>

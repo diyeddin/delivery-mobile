@@ -72,7 +72,7 @@ export default function CartScreen({ navigation }: any) {
               />
               
               {/* Details */}
-              <View className="flex-1 ml-4 justify-between">
+              <View className="flex-1 ms-4 justify-between">
                 <View>
                   <Text className="text-onyx font-bold text-lg" numberOfLines={1}>{item.name}</Text>
                   <Text className="text-gray-500 text-xs">Qty: {item.quantity}</Text>
@@ -121,7 +121,7 @@ export default function CartScreen({ navigation }: any) {
           activeOpacity={0.8}
           onPress={handleCheckout}
         >
-          <Text className="text-white font-bold text-lg mr-2">Checkout</Text>
+          <Text className="text-white font-bold text-lg me-2">Checkout</Text>
           <ArrowRight color="white" size={20} />
         </TouchableOpacity>
       </View>

@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
 import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import { LanguageProvider } from './src/context/LanguageContext';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -238,21 +239,23 @@ export default function App() {
   // 👇 STRUCTURE INVERTED HERE
   return (
     <NavigationContainer theme={LuxuryTheme}> 
-      {/* 1. Nav Container is the parent */}
-      <AuthProvider>
-        {/* 2. AuthProvider is the child */}
-        <CartProvider>
-           {/* 3. CartProvider is the grandchild */}
-          
-          <StatusBar style="dark" />
-          <OfflineBanner />
-          
-          <RootNavigator /> 
-          {/* 4. Navigator is inside everything */}
-          
-          <Toast config={toastConfig} topOffset={75} />
-        </CartProvider>
-      </AuthProvider>
+    <LanguageProvider>
+        {/* 1. Nav Container is the parent */}
+        <AuthProvider>
+          {/* 2. AuthProvider is the child */}
+          <CartProvider>
+             {/* 3. CartProvider is the grandchild */}
+            
+            <StatusBar style="dark" />
+            <OfflineBanner />
+            
+            <RootNavigator /> 
+            {/* 4. Navigator is inside everything */}
+            
+            <Toast config={toastConfig} topOffset={75} />
+          </CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </NavigationContainer>
   );
 }

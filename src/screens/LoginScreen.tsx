@@ -75,11 +75,11 @@ export default function LoginScreen({ navigation }: Props) {
 
       <View className="space-y-6">
         <View className="mb-2">
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ml-1">Email</Text>
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">Email</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Mail color="#9CA3AF" size={20} />
             <TextInput 
-              className="flex-1 p-4 text-white ml-2"
+              className="flex-1 p-4 text-white ms-2"
               placeholder="you@example.com"
               placeholderTextColor="#6B7280"
               value={email}
@@ -91,11 +91,11 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <View className="mb-2">
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ml-1">Password</Text>
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">Password</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Lock color="#9CA3AF" size={20} />
             <TextInput 
-              className="flex-1 p-4 text-white ml-2"
+              className="flex-1 p-4 text-white ms-2"
               placeholder="••••••••"
               placeholderTextColor="#6B7280"
               value={password}
@@ -114,7 +114,7 @@ export default function LoginScreen({ navigation }: Props) {
             <ActivityIndicator color="#0F0F0F" />
           ) : (
             <>
-              <Text className="text-onyx font-bold text-lg mr-2">Sign In</Text>
+              <Text className="text-onyx font-bold text-lg me-2">Sign In</Text>
               <ArrowRight color="#0F0F0F" size={20} />
             </>
           )}

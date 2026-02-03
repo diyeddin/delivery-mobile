@@ -70,7 +70,7 @@ export default function NotificationsScreen({ navigation }: any) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">Notifications</Text>
@@ -79,7 +79,7 @@ export default function NotificationsScreen({ navigation }: any) {
       <View className="p-6">
         {/* Toggle Switch */}
         <View className="flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm mb-8">
-          <View className="flex-1 mr-4">
+          <View className="flex-1 me-4">
             <Text className="text-onyx font-bold text-base">Push Notifications</Text>
             <Text className="text-gray-500 text-xs">
               Receive real-time updates when your order is shipped or delivered.

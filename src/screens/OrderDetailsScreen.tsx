@@ -186,7 +186,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
                 {order.store?.phone_number && (
                    <TouchableOpacity onPress={contactStore} className="mt-6 flex-row items-center bg-gray-50 px-5 py-3 rounded-xl border border-gray-200">
                        <Phone size={18} color="#D4AF37" />
-                       <Text className="text-onyx font-bold ml-2">Contact Store</Text>
+                       <Text className="text-onyx font-bold ms-2">Contact Store</Text>
                    </TouchableOpacity>
                 )}
             </View>
@@ -205,7 +205,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
                   
                   return (
                     <View key={step.key} className="flex-row">
-                      <View className="items-center mr-4">
+                      <View className="items-center me-4">
                         <View className={`w-8 h-8 rounded-full items-center justify-center border-2 z-10 ${
                           isActive ? 'bg-gold-500 border-gold-500' : 'bg-white border-gray-200'
                         }`}>

@@ -7,7 +7,7 @@ export default function PrivacyScreen({ navigation }: any) {
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">Privacy & Security</Text>

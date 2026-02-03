@@ -306,7 +306,7 @@ export default function HomeScreen({ navigation }: Props) {
           <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
             <View className="flex-row items-center flex-1">
               {/* Pulsing Dot Indicator */}
-              <View className="relative mr-4">
+              <View className="relative me-4">
                  <View className="w-10 h-10 bg-gold-500/20 rounded-full items-center justify-center animate-pulse">
                      <View className="w-6 h-6 bg-gold-500 rounded-full items-center justify-center shadow-lg">
                         {['in_transit', 'picked_up'].includes(activeOrder.status) ? (
@@ -330,7 +330,7 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
 
             {/* Expand Icon */}
-            <View className="bg-white/10 p-2 rounded-full ml-4">
+            <View className="bg-white/10 p-2 rounded-full ms-4">
               <ChevronDown size={16} color="#D4AF37" style={{ transform: [{ rotate: isWidgetExpanded ? '0deg' : '180deg' }]}} />
             </View>
           </View>

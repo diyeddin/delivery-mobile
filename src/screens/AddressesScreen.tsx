@@ -75,7 +75,7 @@ export default function AddressesScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">Addresses</Text>
@@ -108,12 +108,12 @@ export default function AddressesScreen({ navigation }: Props) {
               }`}
             >
               {/* Icon */}
-              <View className={`p-3 rounded-full mr-4 ${item.is_default ? 'bg-gold-100' : 'bg-gray-50'}`}>
+              <View className={`p-3 rounded-full me-4 ${item.is_default ? 'bg-gold-100' : 'bg-gray-50'}`}>
                 <MapPin color={item.is_default ? '#D4AF37' : '#9CA3AF'} size={24} />
               </View>
 
               {/* Text Info */}
-              <View className="flex-1 mr-2">
+              <View className="flex-1 me-2">
                 <View className="flex-row items-center">
                   <Text className="font-bold text-onyx text-base">{item.label}</Text>
                   {item.is_default && (
@@ -133,7 +133,7 @@ export default function AddressesScreen({ navigation }: Props) {
                 {/* 1. NEW: Edit Button */}
                 <TouchableOpacity 
                   onPress={() => navigation.navigate('AddAddress', { addressToEdit: item })}
-                  className="p-2 mr-1 bg-gray-50 rounded-lg"
+                  className="p-2 me-1 bg-gray-50 rounded-lg"
                 >
                   <Pencil size={18} color="#4B5563" />
                 </TouchableOpacity>

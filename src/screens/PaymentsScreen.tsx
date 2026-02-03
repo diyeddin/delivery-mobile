@@ -39,7 +39,7 @@ export default function PaymentsScreen({ navigation }: any) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">Payment Methods</Text>
@@ -113,7 +113,7 @@ export default function PaymentsScreen({ navigation }: any) {
         <View className="bg-white p-5 rounded-xl border border-gray-100">
             <View className="flex-row items-center mb-3">
                 <Info size={16} color="#D4AF37" />
-                <Text className="text-onyx font-bold ml-2">Transfer Instructions</Text>
+                <Text className="text-onyx font-bold ms-2">Transfer Instructions</Text>
             </View>
             <Text className="text-gray-500 text-sm leading-5 mb-4">
                 If you select Transfer, please send the total amount to our official number below and include the Transaction ID in your order notes.

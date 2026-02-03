@@ -93,7 +93,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
         {/* Content Body */}
         <View className="px-6 py-8">
           <View className="flex-row justify-between items-start mb-4">
-            <View className="flex-1 mr-4">
+            <View className="flex-1 me-4">
               {/* Use state 'product' */}
               <Text className="text-3xl font-serif text-onyx mb-2">{product.name}</Text>
               <Text className="text-gray-500 text-xs uppercase tracking-widest font-bold">
@@ -135,7 +135,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           }}
         >
           <ShoppingBag color="white" size={20} className="mr-2" />
-          <Text className="text-white font-bold text-lg ml-2">Add to Cart</Text>
+          <Text className="text-white font-bold text-lg ms-2">Add to Cart</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext'; // <--- 1. Import Hook
 import {
   LogOut,
   ChevronRight,
@@ -10,16 +11,14 @@ import {
   CreditCard,
   Bell,
   Shield,
-  User as UserIcon
+  User as UserIcon,
+  Globe // <--- 2. Import Globe Icon
 } from 'lucide-react-native';
 
-// 1. New Imports for Advanced Typing
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { HomeStackParamList, ProfileStackParamList } from '../types';
 
-// 2. Define the Composite Prop
-// This tells TypeScript: "I can navigate to screens in ProfileStack OR HomeStack"
 type ProfileScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>,
   NativeStackNavigationProp<HomeStackParamList>
@@ -29,6 +28,7 @@ interface Props {
   navigation: ProfileScreenNavigationProp;
 }
 
+// Helper Row Component
 const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => (
   <TouchableOpacity
     onPress={onPress}
@@ -36,7 +36,7 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => 
     activeOpacity={0.7}
   >
     <View className="flex-row items-center">
-      <View className={`p-2 rounded-lg ${isDestructive ? 'bg-red-50' : 'bg-gray-50'} mr-4`}>
+      <View className={`p-2 rounded-lg ${isDestructive ? 'bg-red-50' : 'bg-gray-50'} me-4`}>
         <Icon size={20} color={isDestructive ? '#EF4444' : '#0F0F0F'} />
       </View>
       <Text className={`text-base font-medium ${isDestructive ? 'text-red-500' : 'text-onyx'}`}>
@@ -49,14 +49,15 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => 
 
 export default function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
+  const { t, language, changeLanguage } = useLanguage(); // <--- 3. Use Hook
 
   const handleLogout = () => {
     Alert.alert(
-      "Log Out",
+      t('logout'), // Translated
       "Are you sure you want to sign out?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Log Out", style: "destructive", onPress: logout }
+        { text: t('logout'), style: "destructive", onPress: logout }
       ]
     );
   };
@@ -68,7 +69,7 @@ export default function ProfileScreen({ navigation }: Props) {
         <View className="bg-onyx/5 p-6 rounded-full mb-6">
           <UserIcon size={48} color="#0F0F0F" />
         </View>
-        <Text className="text-2xl font-serif text-onyx mb-2 px-3">Welcome, Guest</Text>
+        <Text className="text-2xl font-serif text-onyx mb-2 px-3">{t('welcome')}</Text>
         <Text className="text-gray-500 text-center mb-8">
           Log in to track your orders, save addresses, and access exclusive mall offers.
         </Text>
@@ -77,7 +78,15 @@ export default function ProfileScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('Login')}
           className="bg-onyx w-full py-4 rounded-xl shadow-lg mb-4"
         >
-          <Text className="text-white text-center font-bold text-lg">Log In / Sign Up</Text>
+          <Text className="text-white text-center font-bold text-lg">{t('login')}</Text>
+        </TouchableOpacity>
+        
+        {/* Simple Language Toggle for Guests */}
+        <TouchableOpacity 
+            onPress={() => changeLanguage(language === 'en' ? 'ar' : 'en')}
+            className="p-3"
+        >
+             <Text className="text-gold-600 font-bold">{t('changeLanguage')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -100,31 +109,57 @@ export default function ProfileScreen({ navigation }: Props) {
 
         {/* My Account */}
         <View className="px-6 mb-2">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">My Account</Text>
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2 text-start">
+            {t('profile')}
+          </Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-6">
           <MenuRow 
             icon={Package} 
-            label="My Orders" 
-            onPress={() => navigation.navigate('Orders')} // <--- WORKS NOW
+            label={t('orders')} 
+            onPress={() => navigation.navigate('Orders')} 
           />
           <MenuRow 
             icon={MapPin} 
-            label="Shipping Addresses" 
-            onPress={() => navigation.navigate('Addresses')} // <--- WORKS NOW
+            label={t('addresses')} 
+            onPress={() => navigation.navigate('Addresses')} 
           />
           <MenuRow 
             icon={CreditCard} 
-            label="Payment Methods" 
+            label={t('paymentMethods')} 
             onPress={() => navigation.navigate('Payments')} 
           />
         </View>
 
         {/* Preferences */}
         <View className="px-6 mb-2">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Preferences</Text>
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2 text-start">
+             Preferences
+          </Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-8">
+          
+          {/* 👇 LANGUAGE SWITCHER ROW */}
+          <TouchableOpacity
+            onPress={() => changeLanguage(language === 'en' ? 'ar' : 'en')}
+            className="flex-row items-center justify-between p-4 border-b border-gray-100 bg-white"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+                <View className="bg-gray-50 p-2 rounded-lg me-4">
+                    <Globe size={20} color="#0F0F0F" />
+                </View>
+                <Text className="text-base font-medium text-onyx">{t('changeLanguage')}</Text>
+            </View>
+
+            {/* Language Toggle UI */}
+            <View className="flex-row items-center bg-gray-100 rounded-full px-3 py-1">
+                <Text className={`text-xs font-bold ${language === 'en' ? 'text-onyx' : 'text-gray-400'}`}>EN</Text>
+                <Text className="text-gray-300 mx-1">|</Text>
+                <Text className={`text-xs font-bold ${language === 'ar' ? 'text-onyx' : 'text-gray-400'}`}>AR</Text>
+            </View>
+          </TouchableOpacity>
+
           <MenuRow 
             icon={Bell} 
             label="Notifications" 
@@ -132,7 +167,7 @@ export default function ProfileScreen({ navigation }: Props) {
           />
           <MenuRow 
             icon={Shield} 
-            label="Privacy & Security" 
+            label={t('privacy')} 
             onPress={() => navigation.navigate('Privacy')} 
           />
         </View>
@@ -140,8 +175,8 @@ export default function ProfileScreen({ navigation }: Props) {
         {/* Logout */}
         <View className="mx-4 mb-10">
           <TouchableOpacity onPress={handleLogout} className="flex-row items-center justify-center bg-white border border-red-100 p-4 rounded-xl shadow-sm">
-            <LogOut size={20} color="#EF4444" className="mr-2" />
-            <Text className="text-red-500 font-bold ml-2">Log Out</Text>
+            <LogOut size={20} color="#EF4444" className="me-2" />
+            <Text className="text-red-500 font-bold">{t('logout')}</Text>
           </TouchableOpacity>
           <Text className="text-center text-gray-300 text-xs mt-4">Version 1.0.0 • Golden Rose</Text>
         </View>

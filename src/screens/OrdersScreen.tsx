@@ -97,17 +97,17 @@ export default function OrdersScreen({ navigation }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5 bg-creme z-10">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full mr-4">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">My Orders</Text>
       </View>
 
       <View className="flex-row p-4 mx-2">
-        <TouchableOpacity onPress={() => setActiveTab('active')} className={`flex-1 py-3 rounded-xl items-center justify-center mr-2 border ${activeTab === 'active' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
+        <TouchableOpacity onPress={() => setActiveTab('active')} className={`flex-1 py-3 rounded-xl items-center justify-center me-2 border ${activeTab === 'active' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
           <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>Ongoing</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setActiveTab('past')} className={`flex-1 py-3 rounded-xl items-center justify-center ml-2 border ${activeTab === 'past' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
+        <TouchableOpacity onPress={() => setActiveTab('past')} className={`flex-1 py-3 rounded-xl items-center justify-center ms-2 border ${activeTab === 'past' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
           <Text className={`font-bold ${activeTab === 'past' ? 'text-white' : 'text-gray-400'}`}>History</Text>
         </TouchableOpacity>
       </View>
@@ -146,7 +146,7 @@ export default function OrdersScreen({ navigation }: Props) {
                   className={`flex-row justify-between items-center py-3 ${index !== group.orders.length -1 ? 'border-b border-gray-50' : ''}`}
                 >
                   <View className="flex-row items-center flex-1">
-                    <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center mr-3">
+                    <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center me-3">
                       <Store size={14} color="#6B7280" />
                     </View>
                     <View>

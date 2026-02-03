@@ -39,7 +39,7 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
       <View className="p-3">
         <View className="flex-row justify-between items-start mb-1">
           <Text 
-            className="text-base text-white font-serif flex-1 mr-1" 
+            className="text-base text-white font-serif flex-1 me-1" 
             numberOfLines={1}
           >
             {name}
@@ -47,13 +47,13 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
           {/* Rating */}
           <View className="flex-row items-center bg-white/10 px-1.5 py-0.5 rounded">
             <Star size={10} color="#D4AF37" fill="#D4AF37" />
-            <Text className="text-gold-400 font-bold ml-1 text-[10px]">{rating}</Text>
+            <Text className="text-gold-400 font-bold ms-1 text-[10px]">{rating}</Text>
           </View>
         </View>
         
         <View className="flex-row items-center">
           <MapPin size={12} color="#6B7280" />
-          <Text className="text-gray-400 text-[10px] ml-1" numberOfLines={1}>
+          <Text className="text-gray-400 text-[10px] ms-1" numberOfLines={1}>
             Level 1
           </Text>
         </View>
