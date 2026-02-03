@@ -21,7 +21,7 @@ interface Address {
 }
 
 export default function CheckoutScreen({ navigation }: Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   
@@ -65,7 +65,7 @@ export default function CheckoutScreen({ navigation }: Props) {
     if (!user) {
       Alert.alert(t('login_required'), t('login_to_checkout'), [
         { text: t('cancel'), style: "cancel" },
-        { text: t('login'), onPress: () => navigation.navigate('Login') }
+        { text: t('login'), onPress: () => navigation.navigate('MainTabs', { screen: 'ProfileTab' }) }
       ]);
       return;
     }
@@ -121,7 +121,7 @@ export default function CheckoutScreen({ navigation }: Props) {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">{t('confirm_order')}</Text>
       </View>

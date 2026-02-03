@@ -13,7 +13,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'ProductDetails'>;
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { addToCart } = useCart();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   
   // 1. Initialize State with the navigation params (so it loads instantly)
   const { productId, name: initialName, price: initialPrice, description: initialDesc, image_url: initialImg } = route.params;
@@ -87,7 +87,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
               onPress={() => navigation.goBack()}
               className="ms-6 mt-4 p-2 bg-white/20 backdrop-blur-md rounded-full w-10 h-10 items-center justify-center"
             >
-              <ArrowLeft color="#0F0F0F" size={20} />
+              <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
             </TouchableOpacity>
           </SafeAreaView>
         </View>

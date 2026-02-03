@@ -8,7 +8,7 @@ import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function NotificationsScreen({ navigation }: any) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [isEnabled, setIsEnabled] = useState(false);
   const { registerPushToken } = useAuth(); // <--- Use the function we just made
 
@@ -73,7 +73,7 @@ export default function NotificationsScreen({ navigation }: any) {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">{t('notifications')}</Text>
       </View>

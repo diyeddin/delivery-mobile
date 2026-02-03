@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../types';
+import { ProfileStackParamList } from '../types';
 import Toast from 'react-native-toast-message';
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Login'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Login'>;
 
 interface Props {
   navigation: LoginScreenNavigationProp;
 }
 
 export default function LoginScreen({ navigation }: Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
+
+  // Refs for jumping between fields
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,7 +51,7 @@ export default function LoginScreen({ navigation }: Props) {
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('MainTabs');
+        navigation.navigate('ProfileMain');
       }
       
     } catch (err: any) {
@@ -78,7 +81,7 @@ export default function LoginScreen({ navigation }: Props) {
       <View className="space-y-6">
         <View className="mb-2">
           <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">{t('email')}</Text>
-          <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
+          <View className="h-14 flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Mail color="#9CA3AF" size={20} />
             <TextInput 
               className="flex-1 p-4 text-white ms-2"
@@ -88,21 +91,32 @@ export default function LoginScreen({ navigation }: Props) {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              // Strict Single Line Props
+              multiline={false} 
+              numberOfLines={1}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
         </View>
 
         <View className="mb-2">
           <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">{t('password')}</Text>
-          <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
+          <View className="h-14 flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Lock color="#9CA3AF" size={20} />
             <TextInput 
+              ref={passwordRef}
               className="flex-1 p-4 text-white ms-2"
               placeholder={t('password_placeholder')}
               placeholderTextColor="#6B7280"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              // Strict Single Line Props
+              multiline={false} 
+              numberOfLines={1}
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
             />
           </View>
         </View>
@@ -117,7 +131,7 @@ export default function LoginScreen({ navigation }: Props) {
           ) : (
             <>
               <Text className="text-onyx font-bold text-lg me-2">{t('sign_in')}</Text>
-              <ArrowRight color="#0F0F0F" size={20} />
+              <ArrowRight color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
             </>
           )}
         </TouchableOpacity>

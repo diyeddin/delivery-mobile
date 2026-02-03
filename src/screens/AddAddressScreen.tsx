@@ -11,7 +11,7 @@ import { useLanguage } from '../context/LanguageContext';
 type Props = NativeStackScreenProps<ProfileStackParamList, 'AddAddress'>;
 
 export default function AddAddressScreen({ navigation, route }: Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   // 1. Check for incoming address to edit
   const addressToEdit = route.params?.addressToEdit;
   const isEditing = !!addressToEdit;
@@ -77,7 +77,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">
           {isEditing ? t('edit_address') : t('add_new_address')}
@@ -170,7 +170,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
                 ) : (
                     <Save color="white" size={20} className="me-2" />
                 )}
-                <Text className="text-white font-bold text-lg">
+                <Text className="text-white font-bold text-lg ms-2">
                     {isEditing ? t('update_address') : t('save_address')}
                 </Text>
               </>

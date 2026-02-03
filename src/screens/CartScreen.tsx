@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function CartScreen({ navigation }: any) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { items, addToCart, decreaseCount, totalPrice } = useCart();
   const { user } = useAuth();
 
@@ -21,7 +21,7 @@ export default function CartScreen({ navigation }: any) {
           { text: t('cancel'), style: "cancel" },
           { 
             text: t('log_in'), 
-            onPress: () => navigation.navigate('Login') 
+            onPress: () => navigation.navigate('ProfileTab') // [TODO] fix navigation target
           }
         ]
       );
@@ -124,7 +124,7 @@ export default function CartScreen({ navigation }: any) {
           onPress={handleCheckout}
         >
           <Text className="text-white font-bold text-lg me-2">{t('checkout')}</Text>
-          <ArrowRight color="white" size={20} />
+          <ArrowRight color="white" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

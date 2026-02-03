@@ -32,6 +32,7 @@ import AddAddressScreen from './src/screens/AddAddressScreen';
 import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 
 import { HomeStackParamList, ProfileStackParamList } from './src/types';
+import RegisterScreen from './src/screens/RegisterScreen';
 
 // ---------------------------------------------------------
 // 1. COMPONENTS & CONFIG
@@ -143,6 +144,8 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
       <ProfileStack.Screen name="Payments" component={PaymentsScreen} />
       <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
+      <ProfileStack.Screen name="Login" component={LoginScreen} />
+      <ProfileStack.Screen name="Register" component={RegisterScreen} />
     </ProfileStack.Navigator>
   );
 }
@@ -204,11 +207,6 @@ function RootNavigator() {
       <RootStack.Screen name="MainTabs" component={AppTabs} />
       
       {/* Modals */}
-      <RootStack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ presentation: 'modal', animation: 'fade' }}
-      />
       <RootStack.Screen 
         name="Checkout"
         component={CheckoutScreen}

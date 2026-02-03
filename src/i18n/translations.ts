@@ -30,6 +30,7 @@ export const translations = {
     // Actions
     login: "Login",
     logout: "Logout",
+    create_account: "Register",
     addToCart: "Add to Cart",
     checkout: "Checkout",
     
@@ -233,6 +234,18 @@ export const translations = {
     no_stores: "No stores found.",
     loading_store: "Loading store...",
     level_1: "Level 1",
+
+    // Register
+    signup_subtitle: "Sign up to start shopping",
+    full_name: "Full Name",
+    email_label: "Email Address",
+    password_label: "Password",
+    sign_up_btn: "Sign Up",
+    already_have_account: "Already have an account?",
+    error_missing_fields: "Please fill all fields",
+    account_created: "Account Created",
+    login_to_continue: "Please login to continue",
+    registration_failed: "Registration Failed",
   },
   ar: {
     // General
@@ -263,6 +276,7 @@ export const translations = {
     // Actions
     login: "تسجيل الدخول",
     logout: "تسجيل الخروج",
+    create_account: "انشاء حساب",
     addToCart: "إضافة للسلة",
     checkout: "إتمام الشراء",
     
@@ -466,6 +480,18 @@ export const translations = {
     no_stores: "لم يتم العثور على متاجر.",
     loading_store: "جاري تحميل المتجر...",
     level_1: "المستوى 1",
+
+    // Register
+    signup_subtitle: "سجل الآن وابدأ التسوق",
+    full_name: "الاسم الكامل",
+    email_label: "البريد الإلكتروني",
+    password_label: "كلمة المرور",
+    sign_up_btn: "تسجيل",
+    already_have_account: "لديك حساب بالفعل؟",
+    error_missing_fields: "يرجى ملء جميع الحقول",
+    account_created: "تم إنشاء الحساب",
+    login_to_continue: "يرجى تسجيل الدخول للمتابعة",
+    registration_failed: "فشل التسجيل",
   }
 };
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { I18nManager, NativeModules, Platform, Alert } from 'react-native'; // <--- Import NativeModules & Alert
+import { I18nManager, NativeModules, Alert } from 'react-native'; 
 import * as SecureStore from 'expo-secure-store';
 import * as Updates from 'expo-updates';
 import { translations, Language } from '../i18n/translations';
@@ -18,37 +18,17 @@ export const useLanguage = () => useContext(LanguageContext);
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguage] = useState<Language>('en');
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    const savedLang = await SecureStore.getItemAsync('user_language');
-    if (savedLang === 'ar' || savedLang === 'en') {
-      setLanguage(savedLang);
-    } else {
-      const isRTL = I18nManager.isRTL;
-      setLanguage(isRTL ? 'ar' : 'en');
-    }
-  };
-
-  const t = (key: keyof typeof translations['en']) => {
-    return translations[language][key] || key;
-  };
-
-  // 👇 ROBUST RELOAD FUNCTION
+  // 1. Define Reload Function FIRST so it can be used by loadLanguage
   const reloadApp = async () => {
     try {
-      // 1. Try Expo Updates (Works in Production builds)
+      // Try Expo Updates (Production)
       await Updates.reloadAsync();
     } catch (error) {
       console.log("Expo Updates reload failed, trying DevSettings...");
-      
-      // 2. Fallback: Try Native DevSettings (Works in Simulator/Development)
+      // Try Native DevSettings (Development)
       if (NativeModules.DevSettings) {
         NativeModules.DevSettings.reload();
       } else {
-        // 3. Last Resort: Tell user to restart
         Alert.alert(
           "Restart Required", 
           "Please close and reopen the app to apply the language change."
@@ -57,21 +37,67 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     }
   };
 
+  // 2. Load Language with SYNC CHECK
+  const loadLanguage = async () => {
+    try {
+      const savedLang = await SecureStore.getItemAsync('user_language');
+      const currentIsRTL = I18nManager.isRTL;
+
+      // Check A: User wants Arabic ('ar'), but App is LTR -> FIX IT
+      if (savedLang === 'ar' && !currentIsRTL) {
+        console.log("Syncing Layout: Forcing RTL...");
+        I18nManager.allowRTL(true);
+        I18nManager.forceRTL(true);
+        await reloadApp(); // Restart immediately
+        return;
+      }
+
+      // Check B: User wants English ('en'), but App is RTL -> FIX IT
+      if (savedLang === 'en' && currentIsRTL) {
+        console.log("Syncing Layout: Forcing LTR...");
+        I18nManager.allowRTL(false);
+        I18nManager.forceRTL(false);
+        await reloadApp(); // Restart immediately
+        return;
+      }
+
+      // Check C: All good, just set the state
+      if (savedLang === 'ar' || savedLang === 'en') {
+        setLanguage(savedLang);
+      } else {
+        // First time launch? Match device setting
+        const deviceIsRTL = I18nManager.isRTL;
+        setLanguage(deviceIsRTL ? 'ar' : 'en');
+      }
+    } catch (error) {
+      console.error("Failed to load language:", error);
+    }
+  };
+
+  // 3. Run on Mount
+  useEffect(() => {
+    loadLanguage();
+  }, []);
+
+  const t = (key: keyof typeof translations['en']) => {
+    return translations[language][key] || key;
+  };
+
   const changeLanguage = async (newLang: Language) => {
     if (newLang === language) return;
 
     const isArabic = newLang === 'ar';
     
-    // 1. Save Preference
+    // Save preference
     await SecureStore.setItemAsync('user_language', newLang);
     setLanguage(newLang);
 
-    // 2. Handle RTL Layout
+    // Update Layout Manager
     if (isArabic !== I18nManager.isRTL) {
       I18nManager.allowRTL(isArabic);
       I18nManager.forceRTL(isArabic);
       
-      // 3. Trigger Reload
+      // Reload to apply
       await reloadApp();
     }
   };

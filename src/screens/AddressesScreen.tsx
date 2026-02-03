@@ -12,7 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Addresses'>;
 
 export default function AddressesScreen({ navigation }: Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,7 +78,7 @@ export default function AddressesScreen({ navigation }: Props) {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">{t('addresses')}</Text>
       </View>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AnimatedHeaderProps {
   /** Title to display in the header */
@@ -36,6 +37,7 @@ export default function AnimatedHeader({
   headerHeight = 50,
 }: AnimatedHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { isRTL } = useLanguage();
 
   // Animation interpolations
   const headerOpacity = scrollY.interpolate({
@@ -131,7 +133,7 @@ export default function AnimatedHeader({
                   justifyContent: 'center',
                 }}
               >
-                <ArrowLeft color="#FFFFFF" size={20} />
+                <ArrowLeft color="#FFFFFF" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
               </View>
             </Animated.View>
 
@@ -146,7 +148,7 @@ export default function AnimatedHeader({
                 opacity: headerOpacity,
               }}
             >
-              <ArrowLeft color="#0F0F0F" size={24} />
+              <ArrowLeft color="#0F0F0F" size={24} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
             </Animated.View>
           </TouchableOpacity>
         </View>

@@ -27,7 +27,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 
 export default function OrderDetailsScreen({ route, navigation }: Props) {
   const { orderId } = route.params;
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
       <SafeAreaView edges={['top']} className="bg-white z-10 shadow-sm border-b border-gray-100">
         <View className="flex-row items-center p-4">
           <TouchableOpacity onPress={() => navigation.goBack()} className="me-4 bg-gray-50 p-2 rounded-full">
-            <ArrowLeft color="#1A1A1A" size={20} />
+            <ArrowLeft color="#1A1A1A" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
           </TouchableOpacity>
           <View>
             <Text className="text-lg font-bold text-onyx font-serif">Order #{order.id}</Text>

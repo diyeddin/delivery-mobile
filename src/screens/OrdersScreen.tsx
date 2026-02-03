@@ -28,7 +28,7 @@ interface OrderGroup {
 }
 
 export default function OrdersScreen({ navigation }: Props) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,7 +100,7 @@ export default function OrdersScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5 bg-creme z-10">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">{t('my_orders')}</Text>
       </View>
@@ -170,7 +170,7 @@ export default function OrdersScreen({ navigation }: Props) {
                        </View>
                     </View>
                   </View>
-                  <ChevronRight size={16} color="#D1D5DB" />
+                  <ChevronRight size={16} color="#D1D5DB" style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
                 </TouchableOpacity>
               ))}
             </View>

@@ -9,6 +9,8 @@ export type ProfileStackParamList = {
   Payments: undefined;
   Privacy: undefined;
   Notifications: undefined;
+  Login: undefined;
+  Register: undefined;
 };
 
 // 1. Add the Address Interface
@@ -33,11 +35,9 @@ export type HomeStackParamList = {
   MarketplaceMain: undefined;
   StoreDetails: { storeId: number; name: string };
   ProductDetails: { productId: number; name: string; price: number; description: string; image_url?: string };
-  Login: undefined;
   Checkout: undefined;
   MainTabs: { screen?: keyof MainTabParamList } | undefined;
   OrderDetails: { orderId: number };
   Addresses: undefined;
   AddAddress: { addressToEdit?: Address } | undefined;
-
 };

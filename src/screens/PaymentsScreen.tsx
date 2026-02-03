@@ -6,8 +6,13 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 
+// 1. Add this helper function at the top of your file (or in a utils folder)
+// \u202A = Start Left-to-Right Embedding
+// \u202C = End Formatting
+const forceLTR = (str: string) => `\u202A${str}\u202C`;
+
 export default function PaymentsScreen({ navigation }: any) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [defaultMethod, setDefaultMethod] = useState<'cash' | 'transfer'>('cash');
   
   // Store's Transfer Number (You could fetch this from API later)
@@ -42,7 +47,7 @@ export default function PaymentsScreen({ navigation }: any) {
       {/* Header */}
       <View className="px-6 py-4 flex-row items-center border-b border-onyx/5">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
-          <ArrowLeft color="#0F0F0F" size={20} />
+          <ArrowLeft color="#0F0F0F" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">{t('paymentMethods')}</Text>
       </View>
@@ -124,7 +129,7 @@ export default function PaymentsScreen({ navigation }: any) {
             <View className="bg-gray-50 p-3 rounded-lg flex-row justify-between items-center border border-gray-200">
                 <View>
                     <Text className="text-xs text-gray-400 uppercase font-bold">{t('official_number')}</Text>
-                    <Text className="text-lg text-onyx font-mono font-bold">{STORE_TRANSFER_NUMBER}</Text>
+                    <Text className="text-lg text-onyx font-mono font-bold">{forceLTR(STORE_TRANSFER_NUMBER)}</Text>
                 </View>
                 <TouchableOpacity onPress={copyToClipboard} className="p-2">
                     <Copy size={20} color="#6B7280" />

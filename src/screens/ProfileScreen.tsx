@@ -29,7 +29,7 @@ interface Props {
 }
 
 // Helper Row Component
-const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => (
+const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: any) => (
   <TouchableOpacity
     onPress={onPress}
     className="flex-row items-center justify-between p-4 border-b border-gray-100 bg-white"
@@ -43,13 +43,13 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => 
         {label}
       </Text>
     </View>
-    {!isDestructive && <ChevronRight size={18} color="#9CA3AF" />}
+    {!isDestructive && <ChevronRight size={18} color="#9CA3AF" style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />}
   </TouchableOpacity>
 );
 
 export default function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
-  const { t, language, changeLanguage } = useLanguage();
+  const { t, language, changeLanguage, isRTL } = useLanguage();
 
   const handleLogout = () => {
     Alert.alert(
@@ -65,29 +65,58 @@ export default function ProfileScreen({ navigation }: Props) {
   // 1. GUEST VIEW
   if (!user) {
     return (
-      <SafeAreaView className="flex-1 bg-creme items-center justify-center p-6" edges={['top']}>
-        <View className="bg-onyx/5 p-6 rounded-full mb-6">
-          <UserIcon size={48} color="#0F0F0F" />
-        </View>
-        <Text className="text-2xl font-serif text-onyx mb-2 px-3">{t('welcome')}</Text>
-        <Text className="text-gray-500 text-center mb-8">
-          {t('guest_profile_message')}
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Login')}
-          className="bg-onyx w-full py-4 rounded-xl shadow-lg mb-4"
-        >
-          <Text className="text-white text-center font-bold text-lg">{t('login')}</Text>
-        </TouchableOpacity>
+      <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
         
-        {/* Simple Language Toggle for Guests */}
-        <TouchableOpacity 
+        {/* 1 NEW HEADER: Language Switcher Top Corner */}
+        <View className="flex-row justify-end px-6 py-4">
+          <TouchableOpacity 
             onPress={() => changeLanguage(language === 'en' ? 'ar' : 'en')}
-            className="p-3"
-        >
-             <Text className="text-gold-600 font-bold">{t('changeLanguage')}</Text>
-        </TouchableOpacity>
+            activeOpacity={0.8}
+            className="flex-row items-center bg-white border border-gold-500/30 rounded-full px-4 py-2 shadow-sm"
+          >
+            <Globe size={16} color="#D4AF37" style={{ marginEnd: 8 }} />
+            <Text className="text-xs font-bold text-onyx uppercase">
+              {language === 'en' ? 'English' : 'العربية'}
+            </Text>
+            {/* Divider */}
+            <View className="h-3 w-[1px] bg-gray-300 mx-2" />
+            <Text className="text-xs font-bold text-gray-400 uppercase">
+              {language === 'en' ? 'AR' : 'EN'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 2 CENTERED CONTENT (Pushed down by flex-1) */}
+        <View className="flex-1 items-center justify-center px-6 -mt-10">
+          <View className="bg-onyx/5 p-6 rounded-full mb-6">
+            <UserIcon size={48} color="#0F0F0F" />
+          </View>
+          
+          <Text className="text-2xl font-serif text-onyx mb-2 px-3 text-center">
+            {t('welcome')}
+          </Text>
+          
+          <Text className="text-gray-500 text-center mb-8 px-4 leading-6">
+            {t('guest_profile_message')}
+          </Text>
+
+          {/* LOGIN BUTTON */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            className="bg-onyx w-full py-4 rounded-xl shadow-lg mb-3"
+          >
+            <Text className="text-white text-center font-bold text-lg">{t('login')}</Text>
+          </TouchableOpacity>
+
+          {/* REGISTER BUTTON */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Register')}
+            className="bg-transparent border-2 border-gold-500 w-full py-4 rounded-xl"
+          >
+            <Text className="text-gold-600 text-center font-bold text-lg">{t('create_account')}</Text>
+          </TouchableOpacity>
+        </View>
+        
       </SafeAreaView>
     );
   }
@@ -117,17 +146,20 @@ export default function ProfileScreen({ navigation }: Props) {
           <MenuRow 
             icon={Package} 
             label={t('orders')} 
-            onPress={() => navigation.navigate('Orders')} 
+            onPress={() => navigation.navigate('Orders')}
+            isRTL={isRTL}
           />
           <MenuRow 
             icon={MapPin} 
             label={t('addresses')} 
-            onPress={() => navigation.navigate('Addresses')} 
+            onPress={() => navigation.navigate('Addresses')}
+            isRTL={isRTL}
           />
           <MenuRow 
             icon={CreditCard} 
             label={t('paymentMethods')} 
-            onPress={() => navigation.navigate('Payments')} 
+            onPress={() => navigation.navigate('Payments')}
+            isRTL={isRTL}
           />
         </View>
 
@@ -163,12 +195,14 @@ export default function ProfileScreen({ navigation }: Props) {
           <MenuRow 
             icon={Bell} 
             label={t('notifications')} 
-            onPress={() => navigation.navigate('Notifications')} 
+            onPress={() => navigation.navigate('Notifications')}
+            isRTL={isRTL}
           />
           <MenuRow 
             icon={Shield} 
             label={t('privacy')} 
-            onPress={() => navigation.navigate('Privacy')} 
+            onPress={() => navigation.navigate('Privacy')}
+            isRTL={isRTL}
           />
         </View>
 
@@ -176,7 +210,7 @@ export default function ProfileScreen({ navigation }: Props) {
         <View className="mx-4 mb-10">
           <TouchableOpacity onPress={handleLogout} className="flex-row items-center justify-center bg-white border border-red-100 p-4 rounded-xl shadow-sm">
             <LogOut size={20} color="#EF4444" className="me-2" />
-            <Text className="text-red-500 font-bold">{t('logout')}</Text>
+            <Text className="text-red-500 font-bold ms-2">{t('logout')}</Text>
           </TouchableOpacity>
           <Text className="text-center text-gray-300 text-xs mt-4">{t('version_footer')}</Text>
         </View>
