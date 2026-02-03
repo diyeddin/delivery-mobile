@@ -8,6 +8,7 @@ import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import Toast from 'react-native-toast-message';
+import * as SecureStore from 'expo-secure-store';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Checkout'>;
 
@@ -33,6 +34,7 @@ export default function CheckoutScreen({ navigation }: Props) {
   // 1. Fetch Default Address on Load
   useEffect(() => {
     fetchDefaultAddress();
+    loadPaymentPreference();
   }, []);
 
   const fetchDefaultAddress = async () => {
@@ -47,6 +49,13 @@ export default function CheckoutScreen({ navigation }: Props) {
       setAddress(null);
     } finally {
       setFetchingAddress(false);
+    }
+  };
+
+  const loadPaymentPreference = async () => {
+    const saved = await SecureStore.getItemAsync('default_payment_method');
+    if (saved === 'transfer' || saved === 'cash') {
+        setPaymentMethod(saved);
     }
   };
 
