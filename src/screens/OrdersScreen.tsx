@@ -87,9 +87,9 @@ export default function OrdersScreen({ navigation }: Props) {
   };
 
   const filteredGroups = orderGroups.filter(group => {
-    // Check for "Active" status (Using 'cancelled' with 2 Ls)
+    // Check for "Active" status (Using 'canceled')
     const isGroupActive = group.orders.some(o => 
-      !['completed', 'delivered', 'cancelled', 'refunded', 'canceled'].includes(o.status.toLowerCase())
+      !['completed', 'delivered', 'canceled', 'refunded', 'canceled'].includes(o.status.toLowerCase())
     );
     return activeTab === 'active' ? isGroupActive : !isGroupActive;
   });
@@ -155,11 +155,11 @@ export default function OrdersScreen({ navigation }: Props) {
                        </Text>
                        <View className={`self-start px-1.5 py-0.5 rounded mt-1 ${
                           subOrder.status === 'delivered' ? 'bg-green-100' : 
-                          ['cancelled', 'canceled'].includes(subOrder.status) ? 'bg-red-100' : 'bg-amber-100'
+                          subOrder.status === 'canceled' ? 'bg-red-100' : 'bg-amber-100'
                        }`}>
                          <Text className={`text-[10px] font-bold capitalize ${
                             subOrder.status === 'delivered' ? 'text-green-700' : 
-                            ['cancelled', 'canceled'].includes(subOrder.status) ? 'text-red-700' : 'text-amber-800'
+                            subOrder.status === 'canceled' ? 'text-red-700' : 'text-amber-800'
                          }`}>
                            {subOrder.status.replace('_', ' ')}
                          </Text>

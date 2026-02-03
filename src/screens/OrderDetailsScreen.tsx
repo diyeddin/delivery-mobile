@@ -11,7 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 const HOST = '192.168.1.101:8000'; // Update with your IP
 const WS_BASE_URL = `ws://${HOST}/api/v1/orders`; 
 
-// Updated Steps to include 'cancelled'
+// Updated Steps to include 'canceled'
 const STATUS_STEPS = [
   { key: 'pending', label: 'Order Placed', desc: 'We have received your order.', icon: Clock },
   { key: 'confirmed', label: 'Confirmed', desc: 'The store is preparing your items.', icon: Check },
@@ -19,7 +19,7 @@ const STATUS_STEPS = [
   { key: 'picked_up', label: 'Picked Up', desc: 'Driver has your order.', icon: ShoppingBag },
   { key: 'in_transit', label: 'In Transit', desc: 'Order is on the way to you.', icon: Truck },
   { key: 'delivered', label: 'Delivered', desc: 'Enjoy your order!', icon: MapPin },
-  { key: 'cancelled', label: 'Canceled', desc: 'This order was canceled.', icon: XCircle }, // Added for logic safety
+  { key: 'canceled', label: 'Canceled', desc: 'This order was canceled.', icon: XCircle }, // Added for logic safety
 ];
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
@@ -82,9 +82,9 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
             setLoading(true);
             try {
               await client.put(`/orders/${orderId}/cancel`);
-              // ✅ CORRECT SPELLING: 'cancelled' (2 Ls)
-              setOrder((prev: any) => ({ ...prev, status: 'cancelled' }));
-              alert("Order has been cancelled.");
+              // ✅ CORRECT SPELLING: 'canceled'
+              setOrder((prev: any) => ({ ...prev, status: 'canceled' }));
+              alert("Order has been canceled.");
             } catch (err: any) {
               const msg = err.response?.data?.detail || "Could not cancel order";
               alert(msg);
@@ -109,7 +109,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.key === order.status);
   
   // ✅ CORRECT SPELLING CHECKS
-  const isCanceled = order.status === 'cancelled' || order.status === 'canceled'; // Check both for safety
+  const isCanceled = order.status === 'canceled';
   const showMap = order.status !== 'delivered' && !isCanceled;
 
   return (
@@ -197,8 +197,8 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
            <Text className="text-lg font-bold text-onyx font-serif mb-6">Order Status</Text>
            <View className="ml-2">
                 {STATUS_STEPS.map((step, index) => {
-                  // Only show up to delivered in timeline, hide 'cancelled' from vertical list if it's not canceled
-                  if (step.key === 'cancelled' && !isCanceled) return null;
+                  // Only show up to delivered in timeline, hide 'canceled' from vertical list if it's not canceled
+                  if (step.key === 'canceled' && !isCanceled) return null;
 
                   const isActive = index <= currentStepIndex;
                   const isLast = index === STATUS_STEPS.length - 1 || (step.key === 'delivered' && !isCanceled);
