@@ -12,7 +12,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
 import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { LanguageProvider } from './src/context/LanguageContext';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -40,6 +40,8 @@ import RegisterScreen from './src/screens/RegisterScreen';
 
 function OfflineBanner() {
   const [isConnected, setIsConnected] = useState(true);
+  const { t } = useLanguage();
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(!!state.isConnected);
@@ -51,8 +53,8 @@ function OfflineBanner() {
     <View className="absolute top-0 w-full bg-red-600 z-50 pt-12 pb-2 items-center justify-center shadow-md">
       <View className="flex-row items-center">
         <WifiOff color="white" size={16} className="me-2" />
-        <Text className="text-white font-bold text-xs uppercase tracking-widest">
-          No Internet Connection
+        <Text className="text-white font-bold text-xs uppercase tracking-widest ms-2">
+          {t('no_internet_connection')}
         </Text>
       </View>
     </View>
