@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, MapPin, CheckCircle, Plus, Wallet, QrCode, FileText } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
@@ -20,6 +21,7 @@ interface Address {
 }
 
 export default function CheckoutScreen({ navigation }: Props) {
+  const { t } = useLanguage();
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   
@@ -61,15 +63,15 @@ export default function CheckoutScreen({ navigation }: Props) {
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      Alert.alert("Login Required", "Please login to checkout", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Login", onPress: () => navigation.navigate('Login') }
+      Alert.alert(t('login_required'), t('login_to_checkout'), [
+        { text: t('cancel'), style: "cancel" },
+        { text: t('login'), onPress: () => navigation.navigate('Login') }
       ]);
       return;
     }
 
     if (!address) {
-      Toast.show({ type: 'error', text1: 'Address Missing', text2: 'Please add a shipping address.' });
+      Toast.show({ type: 'error', text1: t('address_missing'), text2: t('add_shipping_address') });
       return;
     }
 
@@ -93,7 +95,7 @@ export default function CheckoutScreen({ navigation }: Props) {
       });
 
       // 3. Success Handling
-      Toast.show({ type: 'success', text1: 'Order Confirmed', text2: 'Thank you for your purchase.' });
+      Toast.show({ type: 'success', text1: t('order_confirmed'), text2: t('thank_you_purchase') });
       
       // Clear Cart Logic
       clearCart();
@@ -107,8 +109,8 @@ export default function CheckoutScreen({ navigation }: Props) {
 
     } catch (err: any) {
       console.error("Checkout Error:", err);
-      const msg = err.response?.data?.detail || "Checkout failed";
-      Toast.show({ type: 'error', text1: 'Order Failed', text2: msg });
+      const msg = err.response?.data?.detail || t('checkout_failed');
+      Toast.show({ type: 'error', text1: t('order_failed'), text2: msg });
     } finally {
       setLoading(false);
     }
@@ -121,16 +123,16 @@ export default function CheckoutScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
-        <Text className="text-xl text-onyx font-serif">Confirm Order</Text>
+        <Text className="text-xl text-onyx font-serif">{t('confirm_order')}</Text>
       </View>
 
       <ScrollView className="flex-1 p-6">
         
         {/* --- 1. ADDRESS SECTION --- */}
         <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest">Shipping To</Text>
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest">{t('shipping_to')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('MainTabs', { screen: 'ProfileTab' })}> 
-                 <Text className="text-gold-600 text-xs font-bold">Change</Text>
+                 <Text className="text-gold-600 text-xs font-bold">{t('change')}</Text>
             </TouchableOpacity>
         </View>
 
@@ -151,13 +153,13 @@ export default function CheckoutScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate('MainTabs', { screen: 'ProfileTab' })}
                 className="bg-white p-4 rounded-xl flex-row items-center justify-center shadow-sm mb-6 border-2 border-dashed border-gray-300"
             >
-                <Plus color="#9CA3AF" size={20} className="mr-2" />
-                <Text className="text-gray-400 font-bold">Add Address</Text>
+                <Plus color="#9CA3AF" size={20} className="me-2" />
+                <Text className="text-gray-400 font-bold">{t('add_address')}</Text>
             </TouchableOpacity>
         )}
 
         {/* --- 2. PAYMENT METHOD SELECTOR --- */}
-        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Payment Method</Text>
+        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">{t('payment_method')}</Text>
         <View className="flex-row gap-2 mb-6">
             {/* Cash */}
             <TouchableOpacity 
@@ -167,7 +169,7 @@ export default function CheckoutScreen({ navigation }: Props) {
                 }`}
             >
                 <Wallet size={24} color={paymentMethod === 'cash' ? '#D4AF37' : '#9CA3AF'} />
-                <Text className={`font-bold mt-2 ${paymentMethod === 'cash' ? 'text-onyx' : 'text-gray-400'}`}>Cash</Text>
+                <Text className={`font-bold mt-2 ${paymentMethod === 'cash' ? 'text-onyx' : 'text-gray-400'}`}>{t('cash')}</Text>
             </TouchableOpacity>
 
             {/* Transfer */}
@@ -178,16 +180,16 @@ export default function CheckoutScreen({ navigation }: Props) {
                 }`}
             >
                 <QrCode size={24} color={paymentMethod === 'transfer' ? '#D4AF37' : '#9CA3AF'} />
-                <Text className={`font-bold mt-2 ${paymentMethod === 'transfer' ? 'text-onyx' : 'text-gray-400'}`}>Transfer</Text>
+                <Text className={`font-bold mt-2 ${paymentMethod === 'transfer' ? 'text-onyx' : 'text-gray-400'}`}>{t('transfer')}</Text>
             </TouchableOpacity>
         </View>
 
         {/* --- 3. DELIVERY NOTE --- */}
-        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Delivery Instructions</Text>
+        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">{t('delivery_instructions')}</Text>
         <View className="bg-white p-3 rounded-xl border border-gray-100 mb-6 flex-row items-start">
             <FileText size={20} color="#9CA3AF" style={{ marginTop: 2, marginRight: 8 }} />
             <TextInput 
-                placeholder="e.g. Doorbell broken, call upon arrival..."
+                placeholder={t('delivery_instructions_placeholder')}
                 multiline
                 numberOfLines={2}
                 value={note}
@@ -198,19 +200,19 @@ export default function CheckoutScreen({ navigation }: Props) {
         </View>
 
         {/* --- 4. SUMMARY --- */}
-        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Summary</Text>
+        <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">{t('summary')}</Text>
         <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-20">
           <View className="flex-row justify-between mb-2">
-            <Text className="text-gray-500">Subtotal</Text>
+            <Text className="text-gray-500">{t('subtotal')}</Text>
             <Text className="text-onyx">${totalPrice.toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
-            <Text className="text-gray-500">Delivery Fee</Text>
+            <Text className="text-gray-500">{t('delivery_fee')}</Text>
             <Text className="text-onyx">$2.00</Text> 
           </View>
           <View className="h-[1px] bg-gray-100 my-2" />
           <View className="flex-row justify-between items-center">
-            <Text className="text-onyx font-bold text-lg">Total</Text>
+            <Text className="text-onyx font-bold text-lg">{t('total')}</Text>
             <Text className="text-gold-600 font-bold text-xl">${(totalPrice + 2).toFixed(2)}</Text>
           </View>
         </View>
@@ -230,7 +232,7 @@ export default function CheckoutScreen({ navigation }: Props) {
           ) : (
             <>
               <Text className="text-white font-bold text-lg me-2 uppercase tracking-wider">
-                {paymentMethod === 'cash' ? 'Place Order' : 'Proceed to Pay'}
+                {paymentMethod === 'cash' ? t('placeOrder') : t('proceed_to_pay')}
               </Text>
               <CheckCircle color="white" size={20} />
             </>

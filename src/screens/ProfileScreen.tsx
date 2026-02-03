@@ -49,14 +49,14 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false }: any) => 
 
 export default function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
-  const { t, language, changeLanguage } = useLanguage(); // <--- 3. Use Hook
+  const { t, language, changeLanguage } = useLanguage();
 
   const handleLogout = () => {
     Alert.alert(
-      t('logout'), // Translated
-      "Are you sure you want to sign out?",
+      t('logout'),
+      t('confirm_logout'),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         { text: t('logout'), style: "destructive", onPress: logout }
       ]
     );
@@ -71,7 +71,7 @@ export default function ProfileScreen({ navigation }: Props) {
         </View>
         <Text className="text-2xl font-serif text-onyx mb-2 px-3">{t('welcome')}</Text>
         <Text className="text-gray-500 text-center mb-8">
-          Log in to track your orders, save addresses, and access exclusive mall offers.
+          {t('guest_profile_message')}
         </Text>
 
         <TouchableOpacity
@@ -134,7 +134,7 @@ export default function ProfileScreen({ navigation }: Props) {
         {/* Preferences */}
         <View className="px-6 mb-2">
           <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2 text-start">
-             Preferences
+             {t('preferences')}
           </Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-8">
@@ -162,7 +162,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
           <MenuRow 
             icon={Bell} 
-            label="Notifications" 
+            label={t('notifications')} 
             onPress={() => navigation.navigate('Notifications')} 
           />
           <MenuRow 
@@ -178,7 +178,7 @@ export default function ProfileScreen({ navigation }: Props) {
             <LogOut size={20} color="#EF4444" className="me-2" />
             <Text className="text-red-500 font-bold">{t('logout')}</Text>
           </TouchableOpacity>
-          <Text className="text-center text-gray-300 text-xs mt-4">Version 1.0.0 • Golden Rose</Text>
+          <Text className="text-center text-gray-300 text-xs mt-4">{t('version_footer')}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import StoreCard from './StoreCard';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Store {
   id: number;
@@ -30,6 +31,7 @@ export default function StoreGrid({
   ListHeaderComponent,
   contentPaddingBottom = 100
 }: StoreGridProps) {
+  const { t } = useLanguage();
 
   if (isLoading && !refreshing) {
     return (
@@ -79,7 +81,7 @@ export default function StoreGrid({
       
       ListEmptyComponent={
         <View className="items-center justify-center mt-10">
-           <Text className="text-gray-500 font-serif">No stores found.</Text>
+           <Text className="text-gray-500 font-serif">{t('no_stores')}</Text>
         </View>
       }
     />

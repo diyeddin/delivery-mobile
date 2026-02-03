@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Animated, RefreshControl, ActivityIndicator } from 'react-native';
 import { ShoppingBag } from 'lucide-react-native';
 import ProductCard from './ProductCard';
+import { useLanguage } from '../context/LanguageContext';
 
 // This must match the background color of your "Sheet" header in StoreDetailsScreen
 // const SHEET_BG_COLOR = '##F5F5F0'; 
@@ -42,6 +43,8 @@ export default function ProductGrid({
   refreshOffset = 0,
   contentContainerStyle
 }: ProductGridProps) {
+  const { t } = useLanguage();
+  
   if (isLoading && !refreshing) {
     return (
       <View className="flex-1 items-center justify-center mt-40">
@@ -99,7 +102,7 @@ export default function ProductGrid({
           style={{ backgroundColor: "bg-creme" }}
         >
           <ShoppingBag size={48} color="#E5E7EB" />
-          <Text className="text-gray-400 mt-4 font-serif">No products found.</Text>
+          <Text className="text-gray-400 mt-4 font-serif">{t('no_products')}</Text>
         </View>
       }
     />

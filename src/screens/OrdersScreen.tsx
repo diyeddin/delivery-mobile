@@ -3,9 +3,10 @@ import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshContr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Clock, ChevronRight, Store } from 'lucide-react-native';
 import client from '../api/client';
+import { useLanguage } from '../context/LanguageContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
-import { useFocusEffect } from '@react-navigation/native'; // <--- IMPORT THIS
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Orders'>;
 
@@ -27,6 +28,7 @@ interface OrderGroup {
 }
 
 export default function OrdersScreen({ navigation }: Props) {
+  const { t } = useLanguage();
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,15 +102,15 @@ export default function OrdersScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
-        <Text className="text-xl text-onyx font-serif">My Orders</Text>
+        <Text className="text-xl text-onyx font-serif">{t('my_orders')}</Text>
       </View>
 
       <View className="flex-row p-4 mx-2">
         <TouchableOpacity onPress={() => setActiveTab('active')} className={`flex-1 py-3 rounded-xl items-center justify-center me-2 border ${activeTab === 'active' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
-          <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>Ongoing</Text>
+          <Text className={`font-bold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>{t('ongoing')}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setActiveTab('past')} className={`flex-1 py-3 rounded-xl items-center justify-center ms-2 border ${activeTab === 'past' ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'}`}>
-          <Text className={`font-bold ${activeTab === 'past' ? 'text-white' : 'text-gray-400'}`}>History</Text>
+          <Text className={`font-bold ${activeTab === 'past' ? 'text-white' : 'text-gray-400'}`}>{t('history')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -123,17 +125,19 @@ export default function OrdersScreen({ navigation }: Props) {
           ListEmptyComponent={
             <View className="items-center mt-20 opacity-50">
               <Package size={64} color="#E5E7EB" />
-              <Text className="text-gray-400 mt-4 font-serif text-lg">No {activeTab} orders found.</Text>
+              <Text className="text-gray-400 mt-4 font-serif text-lg">
+                {activeTab === 'active' ? `${t('no')} ${t('ongoing')} ${t('orders').toLowerCase()}` : `${t('no')} ${t('history')} ${t('orders').toLowerCase()}`}
+              </Text>
             </View>
           }
           renderItem={({ item: group }) => (
             <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
               <View className="flex-row justify-between items-start mb-3 border-b border-gray-100 pb-3">
                 <View>
-                  <Text className="font-bold text-onyx text-base">Order Bundle</Text>
+                  <Text className="font-bold text-onyx text-base">{t('order_bundle')}</Text>
                   <View className="flex-row items-center mt-1">
-                    <Clock size={12} color="#9CA3AF" className="mr-1" />
-                    <Text className="text-gray-400 text-xs">{formatDate(group.createdAt)}</Text>
+                    <Clock size={12} color="#9CA3AF" className="me-1" />
+                    <Text className="text-gray-400 text-xs ms-1">{formatDate(group.createdAt)}</Text>
                   </View>
                 </View>
                 <Text className="text-onyx font-serif font-bold text-lg">${group.totalPrice.toFixed(2)}</Text>
@@ -151,7 +155,7 @@ export default function OrdersScreen({ navigation }: Props) {
                     </View>
                     <View>
                        <Text className="font-bold text-gray-800 text-sm">
-                         {subOrder.store?.name || `Store Order #${subOrder.id}`}
+                         {subOrder.store?.name || `${t('store_order')} #${subOrder.id}`}
                        </Text>
                        <View className={`self-start px-1.5 py-0.5 rounded mt-1 ${
                           subOrder.status === 'delivered' ? 'bg-green-100' : 

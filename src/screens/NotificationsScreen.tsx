@@ -5,8 +5,10 @@ import { ArrowLeft, Bell } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '../context/AuthContext'; // <--- Import Context
 import Toast from 'react-native-toast-message';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function NotificationsScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [isEnabled, setIsEnabled] = useState(false);
   const { registerPushToken } = useAuth(); // <--- Use the function we just made
 
@@ -29,15 +31,15 @@ export default function NotificationsScreen({ navigation }: any) {
         const { status } = await Notifications.getPermissionsAsync();
         if (status === 'granted') {
           setIsEnabled(true);
-          Toast.show({ type: 'success', text1: 'Notifications Enabled' });
+          Toast.show({ type: 'success', text1: t('notifications_enabled') });
         } else {
           // If user previously denied, we must send them to settings
           Alert.alert(
-            "Permission Required",
-            "Please enable notifications in your system settings.",
+            t('permission_required'),
+            t('enable_notifications_settings'),
             [
-              { text: "Cancel", style: "cancel" },
-              { text: "Open Settings", onPress: () => {
+              { text: t('cancel'), style: "cancel" },
+              { text: t('open_settings'), onPress: () => {
                  if (Platform.OS === 'ios') Linking.openURL('app-settings:');
                  else Linking.openSettings();
               }}
@@ -53,11 +55,11 @@ export default function NotificationsScreen({ navigation }: any) {
       // Note: We cannot programmatically "revoke" permission in iOS/Android.
       // We can only stop sending tokens or tell user to go to settings.
       Alert.alert(
-        "Disable Notifications",
-        "To disable notifications completely, please turn them off in your device settings.",
+        t('disable_notifications'),
+        t('disable_notifications_message'),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => {
+          { text: t('cancel'), style: "cancel" },
+          { text: t('open_settings'), onPress: () => {
              if (Platform.OS === 'ios') Linking.openURL('app-settings:');
              else Linking.openSettings();
           }}
@@ -73,16 +75,16 @@ export default function NotificationsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
-        <Text className="text-xl text-onyx font-serif">Notifications</Text>
+        <Text className="text-xl text-onyx font-serif">{t('notifications')}</Text>
       </View>
 
       <View className="p-6">
         {/* Toggle Switch */}
         <View className="flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm mb-8">
           <View className="flex-1 me-4">
-            <Text className="text-onyx font-bold text-base">Push Notifications</Text>
+            <Text className="text-onyx font-bold text-base">{t('push_notifications')}</Text>
             <Text className="text-gray-500 text-xs">
-              Receive real-time updates when your order is shipped or delivered.
+              {t('push_notifications_desc')}
             </Text>
           </View>
           <Switch 
@@ -97,12 +99,12 @@ export default function NotificationsScreen({ navigation }: any) {
         <View className="items-center justify-center mt-10 opacity-50">
           <Bell size={64} color={isEnabled ? "#D4AF37" : "#9CA3AF"} />
           <Text className="text-gray-400 mt-4 text-center font-medium">
-            {isEnabled ? "You are all set!" : "Notifications are off"}
+            {isEnabled ? t('notifications_all_set') : t('notifications_off')}
           </Text>
           <Text className="text-gray-400 text-center text-xs px-10 mt-2">
             {isEnabled 
-              ? "We will notify you when your order status changes." 
-              : "Enable them above to track your deliveries."}
+              ? t('notifications_on_desc') 
+              : t('notifications_off_desc')}
           </Text>
         </View>
       </View>

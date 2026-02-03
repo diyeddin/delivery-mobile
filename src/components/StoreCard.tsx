@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Star, MapPin } from 'lucide-react-native';
+import { useLanguage } from '../context/LanguageContext';
 
 interface StoreProps {
   id: number;
@@ -12,6 +13,8 @@ interface StoreProps {
 }
 
 export default function StoreCard({ name, category, image_url, rating = 4.8, onPress }: StoreProps) {
+  const { t } = useLanguage();
+  
   return (
     <TouchableOpacity 
       onPress={onPress}
@@ -54,7 +57,7 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
         <View className="flex-row items-center">
           <MapPin size={12} color="#6B7280" />
           <Text className="text-gray-400 text-[10px] ms-1" numberOfLines={1}>
-            Level 1
+            {t('level_1')}
           </Text>
         </View>
       </View>

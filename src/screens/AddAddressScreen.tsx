@@ -6,16 +6,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import client from '../api/client';
 import Toast from 'react-native-toast-message';
+import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'AddAddress'>;
 
 export default function AddAddressScreen({ navigation, route }: Props) {
+  const { t } = useLanguage();
   // 1. Check for incoming address to edit
   const addressToEdit = route.params?.addressToEdit;
   const isEditing = !!addressToEdit;
 
   // 2. Initialize State (Pre-fill if editing, else defaults)
-  const [label, setLabel] = useState(addressToEdit?.label || 'Home');
+  const [label, setLabel] = useState(addressToEdit?.label || t('home'));
   const [addressLine, setAddressLine] = useState(addressToEdit?.address_line || '');
   const [instructions, setInstructions] = useState(addressToEdit?.instructions || '');
   const [isDefault, setIsDefault] = useState(addressToEdit?.is_default || false);
@@ -33,7 +35,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
 
   const handleSave = async () => {
     if (!addressLine.trim()) {
-      Toast.show({ type: 'error', text1: 'Address Required', text2: 'Please enter a valid address.' });
+      Toast.show({ type: 'error', text1: t('address_required'), text2: t('enter_valid_address') });
       return;
     }
 
@@ -52,19 +54,19 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       if (isEditing) {
         // --- EDIT MODE (PATCH) ---
         await client.patch(`/addresses/${addressToEdit.id}`, payload);
-        Toast.show({ type: 'success', text1: 'Address Updated' });
+        Toast.show({ type: 'success', text1: t('address_updated') });
       } else {
         // --- CREATE MODE (POST) ---
         await client.post('/addresses/', payload);
-        Toast.show({ type: 'success', text1: 'Address Saved' });
+        Toast.show({ type: 'success', text1: t('address_saved') });
       }
       
       navigation.goBack(); 
       
     } catch (error: any) {
       console.error("Save Error:", error.response?.data || error);
-      const msg = error.response?.data?.detail || "Failed to save address";
-      Toast.show({ type: 'error', text1: 'Error', text2: msg });
+      const msg = error.response?.data?.detail || t('failed_to_save_address');
+      Toast.show({ type: 'error', text1: t('error'), text2: msg });
     } finally {
       setLoading(false);
     }
@@ -78,7 +80,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
         <Text className="text-xl text-onyx font-serif">
-          {isEditing ? 'Edit Address' : 'Add New Address'}
+          {isEditing ? t('edit_address') : t('add_new_address')}
         </Text>
       </View>
 
@@ -90,7 +92,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
           
           {/* Label Field */}
           <View className="mb-6">
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Label</Text>
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{t('label')}</Text>
             <View className="flex-row gap-3 mb-3">
               {['Home', 'Work', 'Other'].map((tag) => (
                 <TouchableOpacity
@@ -100,7 +102,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
                     label === tag ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
                   }`}
                 >
-                  <Text className={label === tag ? 'text-white font-bold' : 'text-gray-500'}>{tag}</Text>
+                  <Text className={label === tag ? 'text-white font-bold' : 'text-gray-500'}>{t(tag.toLowerCase() as any)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -109,7 +111,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
             {label === 'Other' && (
                <TextInput
                  className="bg-white p-4 rounded-xl border border-gray-200 text-onyx text-base"
-                 placeholder="e.g. Girlfriend's House"
+                 placeholder={t('custom_label_placeholder')}
                  value={customLabel}
                  onChangeText={setCustomLabel}
                />
@@ -118,10 +120,10 @@ export default function AddAddressScreen({ navigation, route }: Props) {
 
           {/* Address Input */}
           <View className="mb-6">
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Full Address</Text>
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{t('full_address')}</Text>
             <TextInput
               className="bg-white p-4 rounded-xl border border-gray-100 text-onyx h-24 text-base"
-              placeholder="Street, Building, City..."
+              placeholder={t('address_placeholder')}
               multiline
               textAlignVertical="top"
               value={addressLine}
@@ -131,10 +133,10 @@ export default function AddAddressScreen({ navigation, route }: Props) {
 
           {/* Instructions Input */}
           <View className="mb-6">
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Delivery Instructions (Optional)</Text>
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{t('delivery_instructions_optional')}</Text>
             <TextInput
               className="bg-white p-4 rounded-xl border border-gray-100 text-onyx text-base h-20"
-              placeholder="e.g. Leave at front desk"
+              placeholder={t('delivery_instructions_example')}
               multiline
               textAlignVertical="top"
               value={instructions}
@@ -144,7 +146,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
 
           {/* Default Switch */}
           <View className="flex-row items-center justify-between bg-white p-4 rounded-xl border border-gray-100 mb-8">
-            <Text className="text-onyx font-bold text-base">Set as Default Address</Text>
+            <Text className="text-onyx font-bold text-base">{t('set_as_default')}</Text>
             <Switch
               trackColor={{ false: "#E5E7EB", true: "#D4AF37" }}
               thumbColor={isDefault ? "#FFFFFF" : "#f4f3f4"}
@@ -164,12 +166,12 @@ export default function AddAddressScreen({ navigation, route }: Props) {
             ) : (
               <>
                 {isEditing ? (
-                    <CheckCircle color="white" size={20} className="mr-2" />
+                    <CheckCircle color="white" size={20} className="me-2" />
                 ) : (
-                    <Save color="white" size={20} className="mr-2" />
+                    <Save color="white" size={20} className="me-2" />
                 )}
                 <Text className="text-white font-bold text-lg">
-                    {isEditing ? 'Update Address' : 'Save Address'}
+                    {isEditing ? t('update_address') : t('save_address')}
                 </Text>
               </>
             )}

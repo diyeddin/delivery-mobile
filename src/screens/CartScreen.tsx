@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { Trash2, ArrowRight, ShoppingBag, Minus, Plus } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function CartScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const { items, addToCart, decreaseCount, totalPrice } = useCart();
   const { user } = useAuth();
 
@@ -13,12 +15,12 @@ export default function CartScreen({ navigation }: any) {
     if (!user) {
       // Logic: If Guest, force Login
       Alert.alert(
-        "Sign In Required",
-        "You need to log in to place an order.",
+        t('sign_in_required'),
+        t('login_to_order'),
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t('cancel'), style: "cancel" },
           { 
-            text: "Log In", 
+            text: t('log_in'), 
             onPress: () => navigation.navigate('Login') 
           }
         ]
@@ -40,9 +42,9 @@ export default function CartScreen({ navigation }: any) {
         <View className="bg-onyx/5 p-6 rounded-full mb-6">
           <ShoppingBag size={48} color="#0F0F0F" />
         </View>
-        <Text className="text-2xl font-serif text-onyx mb-2 px-1">Your bag is empty</Text>
+        <Text className="text-2xl font-serif text-onyx mb-2 px-1">{t('cart_empty_title')}</Text>
         <Text className="text-gray-500 text-center">
-          Looks like you haven't found your perfect match yet.
+          {t('cart_empty_message')}
         </Text>
       </SafeAreaView>
     );
@@ -54,8 +56,8 @@ export default function CartScreen({ navigation }: any) {
       <View className="flex-1">
         {/* Header */}
         <View className="px-6 py-4 border-b border-onyx/5">
-          <Text className="text-3xl font-serif text-onyx">Shopping Bag</Text>
-          <Text className="text-gray-500 text-sm mt-1">{items.length} Items</Text>
+          <Text className="text-3xl font-serif text-onyx">{t('shopping_bag')}</Text>
+          <Text className="text-gray-500 text-sm mt-1">{items.length} {t('items')}</Text>
         </View>
 
         {/* List of Items */}
@@ -75,7 +77,7 @@ export default function CartScreen({ navigation }: any) {
               <View className="flex-1 ms-4 justify-between">
                 <View>
                   <Text className="text-onyx font-bold text-lg" numberOfLines={1}>{item.name}</Text>
-                  <Text className="text-gray-500 text-xs">Qty: {item.quantity}</Text>
+                  <Text className="text-gray-500 text-xs">{t('quantity_short')} {item.quantity}</Text>
                 </View>
                 <Text className="text-gold-600 font-bold">${(item.price * item.quantity).toFixed(2)}</Text>
               </View>
@@ -112,7 +114,7 @@ export default function CartScreen({ navigation }: any) {
       {/* Checkout Footer */}
       <View className="bg-white p-6 shadow-2xl border-t border-gray-100">
         <View className="flex-row justify-between mb-4">
-          <Text className="text-gray-500">Subtotal</Text>
+          <Text className="text-gray-500">{t('subtotal')}</Text>
           <Text className="text-onyx font-bold text-lg">${totalPrice.toFixed(2)}</Text>
         </View>
 
@@ -121,7 +123,7 @@ export default function CartScreen({ navigation }: any) {
           activeOpacity={0.8}
           onPress={handleCheckout}
         >
-          <Text className="text-white font-bold text-lg me-2">Checkout</Text>
+          <Text className="text-white font-bold text-lg me-2">{t('checkout')}</Text>
           <ArrowRight color="white" size={20} />
         </TouchableOpacity>
       </View>

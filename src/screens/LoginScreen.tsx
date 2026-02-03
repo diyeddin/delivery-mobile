@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import client from '../api/client';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function LoginScreen({ navigation }: Props) {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,8 +25,8 @@ export default function LoginScreen({ navigation }: Props) {
     if (!email || !password) {
       Toast.show({
         type: 'error',
-        text1: 'Login Failed',
-        text2: 'Please enter both email and password.',
+        text1: t('login_failed'),
+        text2: t('login_enter_credentials'),
       });
       return;
     }
@@ -51,10 +53,10 @@ export default function LoginScreen({ navigation }: Props) {
       
     } catch (err: any) {
       console.error(err);
-      const msg = err.response?.data?.detail || "Could not connect to server.";
+      const msg = err.response?.data?.detail || t('server_connection_error');
       Toast.show({
         type: 'error',
-        text1: 'Login Failed',
+        text1: t('login_failed'),
         text2: msg,
       });
     } finally {
@@ -69,18 +71,18 @@ export default function LoginScreen({ navigation }: Props) {
       <View className="mb-12">
         <Text className="text-4xl text-white font-serif mb-2">Golden Rose</Text>
         <Text className="text-gold-500 text-xs font-bold uppercase tracking-[4px]">
-          Mobile Concierge
+          {t('mobile_concierge')}
         </Text>
       </View>
 
       <View className="space-y-6">
         <View className="mb-2">
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">Email</Text>
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">{t('email')}</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Mail color="#9CA3AF" size={20} />
             <TextInput 
               className="flex-1 p-4 text-white ms-2"
-              placeholder="you@example.com"
+              placeholder={t('email_placeholder')}
               placeholderTextColor="#6B7280"
               value={email}
               onChangeText={setEmail}
@@ -91,12 +93,12 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <View className="mb-2">
-          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">Password</Text>
+          <Text className="text-gray-400 text-xs uppercase font-bold mb-1 ms-1">{t('password')}</Text>
           <View className="flex-row items-center bg-white/10 rounded-xl px-4 border border-white/5 focus:border-gold-500">
             <Lock color="#9CA3AF" size={20} />
             <TextInput 
               className="flex-1 p-4 text-white ms-2"
-              placeholder="••••••••"
+              placeholder={t('password_placeholder')}
               placeholderTextColor="#6B7280"
               value={password}
               onChangeText={setPassword}
@@ -114,14 +116,14 @@ export default function LoginScreen({ navigation }: Props) {
             <ActivityIndicator color="#0F0F0F" />
           ) : (
             <>
-              <Text className="text-onyx font-bold text-lg me-2">Sign In</Text>
+              <Text className="text-onyx font-bold text-lg me-2">{t('sign_in')}</Text>
               <ArrowRight color="#0F0F0F" size={20} />
             </>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.goBack()} className="items-center mt-4">
-          <Text className="text-gray-500 text-sm">Cancel</Text>
+          <Text className="text-gray-500 text-sm">{t('cancel')}</Text>
         </TouchableOpacity>
       </View>
     </View>

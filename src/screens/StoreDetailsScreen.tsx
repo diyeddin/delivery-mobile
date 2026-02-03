@@ -9,6 +9,7 @@ import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
 import ProductGrid from '../components/ProductGrid';
 import AnimatedHeader from '../components/AnimatedHeader';
+import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetails'>;
 
@@ -18,6 +19,7 @@ const SHEET_BG_COLOR = '#F9F8F6';
 export default function StoreDetailsScreen({ route, navigation }: Props) {
   const { storeId, name } = route.params;
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -80,7 +82,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       <View className="flex-1 bg-creme items-center justify-center">
         <StatusBar barStyle="dark-content" />
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="text-gray-500 mt-4 font-serif">Loading store...</Text>
+        <Text className="text-gray-500 mt-4 font-serif">{t('loading_store')}</Text>
       </View>
     );
   }

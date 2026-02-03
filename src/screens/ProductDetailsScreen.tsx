@@ -7,11 +7,13 @@ import { HomeStackParamList } from '../types';
 import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
 import client from '../api/client'; // <--- Import API Client
+import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ProductDetails'>;
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { addToCart } = useCart();
+  const { t } = useLanguage();
   
   // 1. Initialize State with the navigation params (so it loads instantly)
   const { productId, name: initialName, price: initialPrice, description: initialDesc, image_url: initialImg } = route.params;
@@ -50,8 +52,8 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
       console.error("Failed to refresh product:", error);
       Toast.show({
         type: 'error',
-        text1: 'Update Failed',
-        text2: 'Could not fetch latest product details.'
+        text1: t('update_failed'),
+        text2: t('product_fetch_error')
       });
     } finally {
       setRefreshing(false);
@@ -83,7 +85,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           <SafeAreaView className="absolute top-0 left-0 w-full" edges={['top']}>
             <TouchableOpacity 
               onPress={() => navigation.goBack()}
-              className="ml-6 mt-4 p-2 bg-white/20 backdrop-blur-md rounded-full w-10 h-10 items-center justify-center"
+              className="ms-6 mt-4 p-2 bg-white/20 backdrop-blur-md rounded-full w-10 h-10 items-center justify-center"
             >
               <ArrowLeft color="#0F0F0F" size={20} />
             </TouchableOpacity>
@@ -97,7 +99,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
               {/* Use state 'product' */}
               <Text className="text-3xl font-serif text-onyx mb-2">{product.name}</Text>
               <Text className="text-gray-500 text-xs uppercase tracking-widest font-bold">
-                Luxury Collection {/* add category instead */}
+                {t('luxury_collection')} {/* add category instead */}
               </Text> 
             </View>
             <Text className="text-2xl text-gold-600 font-serif">
@@ -107,9 +109,9 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
 
           <View className="h-[1px] bg-onyx/10 my-4 w-full" />
 
-          <Text className="text-lg font-serif text-onyx mb-3">Description</Text>
+          <Text className="text-lg font-serif text-onyx mb-3">{t('description')}</Text>
           <Text className="text-gray-600 leading-6">
-            {product.description || "Experience the finest quality with this exclusive item. Crafted for elegance and durability, it is the perfect addition to your collection."}
+            {product.description || t('default_product_description')}
           </Text>
         </View>
       </ScrollView>
@@ -128,14 +130,14 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
             });
             Toast.show({
               type: 'success',
-              text1: 'Added to Bag',
-              text2: `${product.name} has been added to your cart.`,
+              text1: t('added_to_bag'),
+              text2: t('added_to_cart_message'),
             });
             // navigation.goBack(); 
           }}
         >
-          <ShoppingBag color="white" size={20} className="mr-2" />
-          <Text className="text-white font-bold text-lg ms-2">Add to Cart</Text>
+          <ShoppingBag color="white" size={20} className="me-2" />
+          <Text className="text-white font-bold text-lg ms-2">{t('addToCart')}</Text>
         </TouchableOpacity>
       </View>
     </View>

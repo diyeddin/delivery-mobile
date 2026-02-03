@@ -5,17 +5,9 @@ import DashboardHeader from '../components/DashboardHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import ProductGrid from '../components/ProductGrid';
 import * as SecureStore from 'expo-secure-store';
-
-// --- MOCK CATEGORIES ---
-const CATEGORIES = [
-  { id: 'All', label: 'All Items' },
-  { id: 'Clothing', label: 'Fashion' },
-  { id: 'Electronics', label: 'Tech' },
-  { id: 'Food', label: 'Food' },
-  { id: 'Home', label: 'Home' },
-];
 
 interface Product {
   id: number;
@@ -27,12 +19,23 @@ interface Product {
 }
 
 export default function MarketplaceScreen({ navigation }: { navigation: any }) {
+  const { t } = useLanguage();
+  
+  // --- MOCK CATEGORIES ---
+  const CATEGORIES = [
+    { id: 'All', label: t('category_all_items') },
+    { id: 'Clothing', label: t('category_fashion') },
+    { id: 'Electronics', label: t('category_tech') },
+    { id: 'Food', label: t('category_food') },
+    { id: 'Home', label: t('category_home') },
+  ];
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   
   // --- ADDRESS STATE ---
-  const [addressLabel, setAddressLabel] = useState<string>("Deliver to");
-  const [addressLine, setAddressLine] = useState<string>("Select Location");
+  const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
+  const [addressLine, setAddressLine] = useState<string>(t('select_location'));
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,7 +57,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         try {
           const addrRes = await client.get('/addresses/default');
           if (addrRes.data) {
-            setAddressLabel(addrRes.data.label || "Deliver to");
+            setAddressLabel(addrRes.data.label || t('deliver_to'));
             const fullAddress = addrRes.data.address_line;
             setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
           }
@@ -66,8 +69,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         }
       } else {
         // --- LOGGED OUT: Reset Header UI ---
-        setAddressLabel("Welcome");
-        setAddressLine("Please login to set address");
+        setAddressLabel(t('welcome'));
+        setAddressLine(t('please_login'));
         setIsGuest(true);
       }
 
@@ -120,8 +123,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
       {/* FIXED HEADER */}
       <View className="px-6 z-9" style={{ paddingHorizontal: 16 }} >
         <DashboardHeader 
-          subtitle="Browse"
-          title="Marketplace"
+          subtitle={t('browse')}
+          title={t('marketplace')}
           addressLabel={addressLabel}
           addressLine={addressLine}
           isGuest={isGuest}
@@ -129,7 +132,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
           searchText={searchText}
           onSearchChange={setSearchText}
-          searchPlaceholder="Search products..."
+          searchPlaceholder={t('search_products')}
 
           categories={CATEGORIES}
           activeCategory={activeCategory}
@@ -169,8 +172,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           });
           Toast.show({
             type: 'success',
-            text1: 'Added to Bag',
-            text2: `${item.name} has been added to your cart.`,
+            text1: t('added_to_bag'),
+            text2: t('added_to_cart_message'),
           });
         }}
       />

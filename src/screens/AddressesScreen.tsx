@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, MapPin, Plus, Trash2, Pencil } from 'lucide-react-native'; // <--- Import Pencil
+import { ArrowLeft, MapPin, Plus, Trash2, Pencil } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList, Address } from '../types';
 import client from '../api/client';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
+import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Addresses'>;
 
 export default function AddressesScreen({ navigation }: Props) {
+  const { t } = useLanguage();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,18 +41,18 @@ export default function AddressesScreen({ navigation }: Props) {
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert("Delete Address", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t('delete_address'), t('are_you_sure'), [
+      { text: t('cancel'), style: "cancel" },
       { 
-        text: "Delete", 
+        text: t('delete'), 
         style: "destructive", 
         onPress: async () => {
           try {
             await client.delete(`/addresses/${id}`);
             setAddresses(prev => prev.filter(a => a.id !== id));
-            Toast.show({ type: 'success', text1: 'Address deleted' });
+            Toast.show({ type: 'success', text1: t('address_deleted') });
           } catch (err) {
-            Toast.show({ type: 'error', text1: 'Could not delete address' });
+            Toast.show({ type: 'error', text1: t('could_not_delete_address') });
           }
         }
       }
@@ -64,9 +66,9 @@ export default function AddressesScreen({ navigation }: Props) {
       // Explicit Payload (ensure only ONE field is sent)
       const payload = { is_default: true };
       await client.patch(`/addresses/${id}`, payload);
-      Toast.show({ type: 'success', text1: 'Default address updated' });
+      Toast.show({ type: 'success', text1: t('default_address_updated') });
     } catch (err) {
-      Toast.show({ type: 'error', text1: 'Failed to update' });
+      Toast.show({ type: 'error', text1: t('failed_to_update') });
       fetchAddresses();
     }
   };
@@ -78,7 +80,7 @@ export default function AddressesScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 bg-onyx/5 rounded-full me-4">
           <ArrowLeft color="#0F0F0F" size={20} />
         </TouchableOpacity>
-        <Text className="text-xl text-onyx font-serif">Addresses</Text>
+        <Text className="text-xl text-onyx font-serif">{t('addresses')}</Text>
       </View>
 
       {/* Content */}
@@ -97,7 +99,7 @@ export default function AddressesScreen({ navigation }: Props) {
           ListEmptyComponent={
             <View className="items-center mt-20 opacity-50">
               <MapPin size={64} color="#E5E7EB" />
-              <Text className="text-gray-400 mt-4 font-serif">No addresses saved.</Text>
+              <Text className="text-gray-400 mt-4 font-serif">{t('no_addresses')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -117,8 +119,8 @@ export default function AddressesScreen({ navigation }: Props) {
                 <View className="flex-row items-center">
                   <Text className="font-bold text-onyx text-base">{item.label}</Text>
                   {item.is_default && (
-                    <Text className="ml-2 text-[10px] bg-gold-100 text-gold-700 px-2 py-0.5 rounded-full font-bold">
-                      DEFAULT
+                    <Text className="ms-2 text-[10px] bg-gold-100 text-gold-700 px-2 py-0.5 rounded-full font-bold">
+                      {t('default').toUpperCase()}
                     </Text>
                   )}
                 </View>

@@ -49,7 +49,7 @@ function OfflineBanner() {
   return (
     <View className="absolute top-0 w-full bg-red-600 z-50 pt-12 pb-2 items-center justify-center shadow-md">
       <View className="flex-row items-center">
-        <WifiOff color="white" size={16} className="mr-2" />
+        <WifiOff color="white" size={16} className="me-2" />
         <Text className="text-white font-bold text-xs uppercase tracking-widest">
           No Internet Connection
         </Text>

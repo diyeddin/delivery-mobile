@@ -67,7 +67,7 @@ export default function DashboardHeader({
           <TextInput 
             placeholder={searchPlaceholder}
             placeholderTextColor="#9CA3AF"
-            className="ml-2 flex-1 text-onyx text-sm p-0"
+            className="ms-2 flex-1 text-onyx text-sm p-0"
             value={searchText}
             onChangeText={onSearchChange}
           />
@@ -80,7 +80,7 @@ export default function DashboardHeader({
           className="flex-row items-center bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100"
         >
             <MapPin size={12} color="#D4AF37" />
-            <View className="ml-1.5 me-1">
+            <View className="ms-1.5 me-1">
               <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">{addressLabel}</Text>
               {/* <Text className="text-[6px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text> */}
             </View>
@@ -98,13 +98,13 @@ export default function DashboardHeader({
           <TouchableOpacity
             key={cat.id}
             onPress={() => onCategoryPress(cat.id)}
-            className={`mr-1 px-4 py-1.5 rounded-full border ${
+            className={`me-1 px-4 py-1.5 rounded-full border ${
               activeCategory === cat.id 
                 ? 'bg-onyx border-onyx' 
                 : 'bg-white border-gray-200'
             }`}
           >
-            <Text className={`text-xs font-bold tracking-wide ${
+            <Text className={`text-xs px-1 font-bold tracking-wide ${
               activeCategory === cat.id ? 'text-gold-400' : 'text-gray-500'
             }`}>
               {cat.label}

@@ -5,6 +5,7 @@ import {
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
+import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Truck, ChevronDown, Check, MapPin, User, Package } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
@@ -24,22 +25,10 @@ const PROMOS = [
   { id: 3, title: 'Food Court', subtitle: 'Free Delivery', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
 ];
 
-const CATEGORIES = [
-  { id: 'All', label: 'All' },
-  { id: 'Clothing', label: 'Fashion' },
-  { id: 'Food', label: 'Dining' },
-  { id: 'Electronics', label: 'Tech' },
-  { id: 'Jewelry', label: 'Jewelry' },
-  { id: 'Home', label: 'Home' },
-];
+// Categories will be translated in the component body where t() is available
 
 // --- TIMELINE CONFIG ---
-const TIMELINE_STEPS = [
-    { label: 'Confirmed', icon: ShoppingBag, statusMatch: ['pending', 'confirmed'] },
-    { label: 'Driver', icon: User, statusMatch: ['assigned'] },
-    { label: 'On Way', icon: Truck, statusMatch: ['picked_up', 'in_transit'] },
-    { label: 'Arriving', icon: MapPin, statusMatch: ['delivered'] },
-];
+// Timeline steps will be translated in the component body where t() is available
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -64,12 +53,14 @@ interface ActiveOrder {
 }
 
 export default function HomeScreen({ navigation }: Props) {
+  const { t } = useLanguage();
+  
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
-  const [addressLabel, setAddressLabel] = useState<string>("Deliver to");
-  const [addressLine, setAddressLine] = useState<string>("Select Location");
+  const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
+  const [addressLine, setAddressLine] = useState<string>(t('select_location'));
   const [searchText, setSearchText] = useState('');
 
   const [isWidgetExpanded, setIsWidgetExpanded] = useState(false);
@@ -80,6 +71,22 @@ export default function HomeScreen({ navigation }: Props) {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<FlatList>(null);
   const [isGuest, setIsGuest] = useState(true);
+  
+  const CATEGORIES = [
+    { id: 'All', label: t('category_all') },
+    { id: 'Clothing', label: t('category_fashion') },
+    { id: 'Food', label: t('category_dining') },
+    { id: 'Electronics', label: t('category_tech') },
+    { id: 'Jewelry', label: t('category_jewelry') },
+    { id: 'Home', label: t('category_home') },
+  ];
+  
+  const TIMELINE_STEPS = [
+    { label: t('status_confirmed'), icon: ShoppingBag, statusMatch: ['pending', 'confirmed'] },
+    { label: t('status_driver'), icon: User, statusMatch: ['assigned'] },
+    { label: t('status_on_way'), icon: Truck, statusMatch: ['picked_up', 'in_transit'] },
+    { label: t('status_arriving'), icon: MapPin, statusMatch: ['delivered'] },
+  ];
 
   const fetchData = async () => {
     try {
@@ -88,8 +95,8 @@ export default function HomeScreen({ navigation }: Props) {
       if (!token) {
         // If logged out, just clear personal data and stop
         setActiveOrder(null);
-        setAddressLabel("Welcome");
-        setAddressLine("Please login");
+        setAddressLabel(t('welcome'));
+        setAddressLine(t('please_login'));
         // We can still fetch public stores if your API allows it without auth
         // If stores require auth too, return here.
         setIsGuest(true);
@@ -101,7 +108,7 @@ export default function HomeScreen({ navigation }: Props) {
         try {
           const addrRes = await client.get('/addresses/default');
           if (addrRes.data) {
-            setAddressLabel(addrRes.data.label || "Deliver to");
+            setAddressLabel(addrRes.data.label || t('deliver_to'));
             const fullAddress = addrRes.data.address_line;
             setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
           }
@@ -198,12 +205,12 @@ export default function HomeScreen({ navigation }: Props) {
 
   const getStatusText = (status: string) => {
     switch(status) {
-      case 'confirmed': return 'Preparing your order...';
-      case 'assigned': return 'Driver assigned';
-      case 'picked_up': return 'Heading to you';
-      case 'in_transit': return 'Arriving soon';
-      case 'pending': return 'Waiting for store...';
-      default: return 'Active Order';
+      case 'confirmed': return t('status_preparing');
+      case 'assigned': return t('status_driver_assigned');
+      case 'picked_up': return t('status_heading_to_you');
+      case 'in_transit': return t('status_arriving_soon');
+      case 'pending': return t('status_waiting_for_store');
+      default: return t('active_order');
     }
   };
 
@@ -269,7 +276,7 @@ export default function HomeScreen({ navigation }: Props) {
           onAddressPress={() => navigation.navigate('Addresses')}
           searchText={searchText}
           onSearchChange={setSearchText}
-          searchPlaceholder="Search stores..."
+          searchPlaceholder={t('search_stores')}
           categories={CATEGORIES}
           activeCategory={activeCategory}
           onCategoryPress={setActiveCategory}
@@ -288,7 +295,7 @@ export default function HomeScreen({ navigation }: Props) {
              {renderCarousel()}
              <View className="flex-row justify-between items-center mb-3">
                <Text className="text-base font-serif text-onyx">
-                 {activeCategory === 'All' ? 'All Shops' : `${activeCategory} Stores`}
+                 {activeCategory === t('category_all') ? t('all_shops') : `${activeCategory} ${t('stores')}`}
                </Text>
              </View>
           </View>
@@ -321,7 +328,7 @@ export default function HomeScreen({ navigation }: Props) {
               <View>
                 {/* Store Name & Status Text */}
                 <Text className="text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                  {activeOrder.store?.name || "Active Order"}
+                  {activeOrder.store?.name || t('active_order')}
                 </Text>
                 <Text className="text-white font-bold text-sm">
                   {getStatusText(activeOrder.status)}
@@ -389,7 +396,7 @@ export default function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate('OrderDetails', { orderId: activeOrder.id })} 
                 className="w-full bg-gold-500 py-3 rounded-xl items-center shadow-lg shadow-gold-500/20 active:opacity-90"
               >
-                <Text className="text-onyx font-bold uppercase tracking-wider text-xs">View Order Details</Text>
+                <Text className="text-onyx font-bold uppercase tracking-wider text-xs">{t('view_order_details')}</Text>
               </TouchableOpacity>
             </View>
           )}
