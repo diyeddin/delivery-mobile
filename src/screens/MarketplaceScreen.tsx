@@ -171,7 +171,6 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
             type: 'success',
             text1: 'Added to Bag',
             text2: `${item.name} has been added to your cart.`,
-            visibilityTime: 3000,
           });
         }}
       />

@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Clock, ChevronRight, Store } from 'lucide-react-native';
 import client from '../api/client';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
+import { useFocusEffect } from '@react-navigation/native'; // <--- IMPORT THIS
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Orders'>;
 
@@ -18,7 +19,6 @@ interface Order {
   items: any[];
 }
 
-// Visual "Card" Interface
 interface OrderGroup {
   groupId: string;
   createdAt: string;
@@ -32,10 +32,14 @@ export default function OrdersScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', fetchOrders);
-    return unsubscribe;
-  }, [navigation]);
+  // --- REFRESH FIX: Triggered every time you look at this screen ---
+  useFocusEffect(
+    useCallback(() => {
+      // Force loading state so user sees update happening
+      setLoading(true); 
+      fetchOrders();
+    }, [])
+  );
 
   const fetchOrders = async () => {
     try {
@@ -49,14 +53,11 @@ export default function OrdersScreen({ navigation }: Props) {
     }
   };
 
-  // --- LOGIC: Turn [Order1, Order2] -> [GroupA(Order1, Order2)] ---
   const groupOrders = (flatOrders: Order[]) => {
     const groups: Record<string, OrderGroup> = {};
 
     flatOrders.forEach(order => {
-      // If group_id exists, use it. If not (old orders), use their own ID.
       const key = order.group_id || `single-${order.id}`;
-
       if (!groups[key]) {
         groups[key] = {
           groupId: key,
@@ -69,7 +70,6 @@ export default function OrdersScreen({ navigation }: Props) {
       groups[key].totalPrice += order.total_price;
     });
 
-    // Sort by Date Descending
     const groupArray = Object.values(groups).sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -86,12 +86,10 @@ export default function OrdersScreen({ navigation }: Props) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Filter Logic
   const filteredGroups = orderGroups.filter(group => {
-    // If ANY sub-order is active, the whole group is "Active"
-    // changed canceled to cancelled to match backend, please revert later
+    // Check for "Active" status (Using 'cancelled' with 2 Ls)
     const isGroupActive = group.orders.some(o => 
-      !['completed', 'delivered', 'cancelled', 'refunded'].includes(o.status.toLowerCase())
+      !['completed', 'delivered', 'cancelled', 'refunded', 'canceled'].includes(o.status.toLowerCase())
     );
     return activeTab === 'active' ? isGroupActive : !isGroupActive;
   });
@@ -130,7 +128,6 @@ export default function OrdersScreen({ navigation }: Props) {
           }
           renderItem={({ item: group }) => (
             <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
-              {/* Group Header */}
               <View className="flex-row justify-between items-start mb-3 border-b border-gray-100 pb-3">
                 <View>
                   <Text className="font-bold text-onyx text-base">Order Bundle</Text>
@@ -142,7 +139,6 @@ export default function OrdersScreen({ navigation }: Props) {
                 <Text className="text-onyx font-serif font-bold text-lg">${group.totalPrice.toFixed(2)}</Text>
               </View>
 
-              {/* Sub-Orders (One per Store) */}
               {group.orders.map((subOrder, index) => (
                 <TouchableOpacity 
                   key={subOrder.id}
@@ -154,15 +150,16 @@ export default function OrdersScreen({ navigation }: Props) {
                       <Store size={14} color="#6B7280" />
                     </View>
                     <View>
-                       {/* Show Store Name instead of Order ID */}
                        <Text className="font-bold text-gray-800 text-sm">
                          {subOrder.store?.name || `Store Order #${subOrder.id}`}
                        </Text>
                        <View className={`self-start px-1.5 py-0.5 rounded mt-1 ${
-                          subOrder.status === 'delivered' ? 'bg-green-100' : 'bg-amber-100'
+                          subOrder.status === 'delivered' ? 'bg-green-100' : 
+                          ['cancelled', 'canceled'].includes(subOrder.status) ? 'bg-red-100' : 'bg-amber-100'
                        }`}>
                          <Text className={`text-[10px] font-bold capitalize ${
-                            subOrder.status === 'delivered' ? 'text-green-700' : 'text-amber-800'
+                            subOrder.status === 'delivered' ? 'text-green-700' : 
+                            ['cancelled', 'canceled'].includes(subOrder.status) ? 'text-red-700' : 'text-amber-800'
                          }`}>
                            {subOrder.status.replace('_', ' ')}
                          </Text>

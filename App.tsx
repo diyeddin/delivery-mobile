@@ -6,7 +6,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import NetInfo from '@react-native-community/netinfo'; 
-import { WifiOff, Home, ShoppingBag, User, Search, Store } from 'lucide-react-native'; // <--- Added Search Icon
+import { WifiOff, Home, ShoppingBag, User, Store } from 'lucide-react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider, useCart } from './src/context/CartContext';
@@ -16,7 +16,7 @@ import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
-import MarketplaceScreen from './src/screens/MarketplaceScreen'; // <--- NEW IMPORT
+import MarketplaceScreen from './src/screens/MarketplaceScreen';
 import CartScreen from './src/screens/CartScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import StoreDetailsScreen from './src/screens/StoreDetailsScreen';
@@ -33,20 +33,18 @@ import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 import { HomeStackParamList, ProfileStackParamList } from './src/types';
 
 // ---------------------------------------------------------
-// 1. OFFLINE BANNER
+// 1. COMPONENTS & CONFIG
 // ---------------------------------------------------------
+
 function OfflineBanner() {
   const [isConnected, setIsConnected] = useState(true);
-
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(!!state.isConnected);
     });
     return unsubscribe;
   }, []);
-
   if (isConnected) return null;
-
   return (
     <View className="absolute top-0 w-full bg-red-600 z-50 pt-12 pb-2 items-center justify-center shadow-md">
       <View className="flex-row items-center">
@@ -59,13 +57,50 @@ function OfflineBanner() {
   );
 }
 
+const LuxuryTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#F5F5F0',
+  },
+};
+
+const toastConfig = {
+  info: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#7babf9', backgroundColor: '#0F0F0F' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#7babf9' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
+    />
+  ),
+  success: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#D4AF37', backgroundColor: '#0F0F0F' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#D4AF37' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
+    />
+  ),
+  error: (props: any) => (
+    <ErrorToast
+      {...props}
+      style={{ borderLeftColor: '#EF4444', backgroundColor: '#0F0F0F' }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#EF4444' }}
+      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
+    />
+  )
+};
+
 // ---------------------------------------------------------
 // 2. NAVIGATORS
 // ---------------------------------------------------------
 const RootStack = createNativeStackNavigator<HomeStackParamList>();
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
-const MarketplaceStack = createNativeStackNavigator<HomeStackParamList>(); // [TODO] maybe create a separate type later
+const MarketplaceStack = createNativeStackNavigator<HomeStackParamList>();
 const Tab = createBottomTabNavigator();
 
 // --- HOME STACK ---
@@ -75,26 +110,20 @@ function HomeStackNavigator() {
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="StoreDetails" component={StoreDetailsScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} /> 
       <Stack.Screen name="Addresses" component={AddressesScreen} />
       <Stack.Screen name="AddAddress" component={AddAddressScreen} />
     </Stack.Navigator>
   );
 }
 
-// --- NEW: MARKETPLACE STACK ---
+// --- MARKETPLACE STACK ---
 function MarketplaceStackNavigator() {
   return (
     <MarketplaceStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-      {/* The Main Marketplace Screen */}
       <MarketplaceStack.Screen name="MarketplaceMain" component={MarketplaceScreen} />
-      
-      {/* Allow drilling down into Product Details from here */}
       <MarketplaceStack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-      
-      {/* Allow jumping to a store if the product card links to it */}
       <MarketplaceStack.Screen name="StoreDetails" component={StoreDetailsScreen} />
-
       <MarketplaceStack.Screen name="Addresses" component={AddressesScreen} />
       <MarketplaceStack.Screen name="AddAddress" component={AddAddressScreen} />
     </MarketplaceStack.Navigator>
@@ -137,20 +166,13 @@ function AppTabs() {
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <Home color={color} size={24} />
-        }}
+        options={{ tabBarIcon: ({ color }) => <Home color={color} size={24} /> }}
       />
-      
-      {/* NEW: MARKETPLACE TAB */}
       <Tab.Screen
         name="MarketplaceTab"
         component={MarketplaceStackNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <Store color={color} size={24} />
-        }}
+        options={{ tabBarIcon: ({ color }) => <Store color={color} size={24} /> }}
       />
-
       <Tab.Screen
         name="Cart"
         component={CartScreen}
@@ -163,83 +185,48 @@ function AppTabs() {
       <Tab.Screen 
         name="ProfileTab" 
         component={ProfileStackNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <User color={color} size={24} />
-        }}
+        options={{ tabBarIcon: ({ color }) => <User color={color} size={24} /> }}
       />
     </Tab.Navigator>
   );
 }
 
-const LuxuryTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: '#F5F5F0',
-  },
-};
-
 // --- ROOT NAVIGATOR ---
+// ⚠️ CHANGED: No longer wraps itself in NavigationContainer
 function RootNavigator() {
   const { isLoading } = useAuth();
 
   if (isLoading) return null;
 
   return (
-    <NavigationContainer theme={LuxuryTheme}>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="MainTabs" component={AppTabs} />
-        <RootStack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{
-            presentation: 'modal', 
-            animation: 'fade'
-          }}
-        />
-        <RootStack.Screen 
-          name="Checkout"
-          component={CheckoutScreen}
-          options={{
-            presentation: 'modal',
-            animation: 'fade',
-          }}
-        />
-      </RootStack.Navigator>
-    </NavigationContainer>
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Screen name="MainTabs" component={AppTabs} />
+      
+      {/* Modals */}
+      <RootStack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ presentation: 'modal', animation: 'fade' }}
+      />
+      <RootStack.Screen 
+        name="Checkout"
+        component={CheckoutScreen}
+        options={{ presentation: 'modal', animation: 'fade' }}
+      />
+
+      {/* Direct link for Checkout -> OrderDetails transition */}
+      <RootStack.Screen 
+        name="OrderDetails" 
+        component={OrderDetailsScreen} 
+        options={{ animation: 'slide_from_right' }}
+      />
+    </RootStack.Navigator>
   );
 }
 
-// --- TOAST CONFIG ---
-const toastConfig = {
-  info: (props: any) => (
-    <BaseToast
-      {...props}
-      style={{ borderLeftColor: '#7babf9', backgroundColor: '#0F0F0F' }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#7babf9' }}
-      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
-    />
-  ),
-  success: (props: any) => (
-    <BaseToast
-      {...props}
-      style={{ borderLeftColor: '#D4AF37', backgroundColor: '#0F0F0F' }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#D4AF37' }}
-      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
-    />
-  ),
-  error: (props: any) => (
-    <ErrorToast
-      {...props}
-      style={{ borderLeftColor: '#EF4444', backgroundColor: '#0F0F0F' }}
-      text1Style={{ fontSize: 16, fontWeight: 'bold', color: '#EF4444' }}
-      text2Style={{ fontSize: 14, color: '#F5F5F0' }}
-    />
-  )
-};
-
+// ---------------------------------------------------------
+// 3. MAIN APP EXPORT
+// ---------------------------------------------------------
 export default function App() {
   let [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
@@ -248,14 +235,24 @@ export default function App() {
 
   if (!fontsLoaded) return null;
 
+  // 👇 STRUCTURE INVERTED HERE
   return (
-    <AuthProvider>
-      <CartProvider>
-        <StatusBar style="dark" />
-        <OfflineBanner />
-        <RootNavigator />
-        <Toast config={toastConfig} topOffset={75} />
-      </CartProvider>
-    </AuthProvider>
+    <NavigationContainer theme={LuxuryTheme}> 
+      {/* 1. Nav Container is the parent */}
+      <AuthProvider>
+        {/* 2. AuthProvider is the child */}
+        <CartProvider>
+           {/* 3. CartProvider is the grandchild */}
+          
+          <StatusBar style="dark" />
+          <OfflineBanner />
+          
+          <RootNavigator /> 
+          {/* 4. Navigator is inside everything */}
+          
+          <Toast config={toastConfig} topOffset={75} />
+        </CartProvider>
+      </AuthProvider>
+    </NavigationContainer>
   );
 }

@@ -64,7 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'error',
         text1: 'Session Expired',
         text2: 'Please log in again.',
-        visibilityTime: 4000,
       });
     });
   }, []);

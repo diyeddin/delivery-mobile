@@ -7,6 +7,7 @@ export interface CartItem {
   price: number;
   image_url?: string;
   quantity: number;
+  store_id: number;
 }
 
 // 2. Define the Context Shape
@@ -50,7 +51,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         name: product.name, 
         price: product.price, 
         image_url: product.image_url,
-        quantity: 1 
+        quantity: 1,
+        store_id: product.store_id
       }];
     });
   };

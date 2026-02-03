@@ -25,7 +25,6 @@ export default function LoginScreen({ navigation }: Props) {
         type: 'error',
         text1: 'Login Failed',
         text2: 'Please enter both email and password.',
-        visibilityTime: 4000,
       });
       return;
     }
@@ -57,7 +56,6 @@ export default function LoginScreen({ navigation }: Props) {
         type: 'error',
         text1: 'Login Failed',
         text2: msg,
-        visibilityTime: 4000,
       });
     } finally {
       setIsSubmitting(false);
