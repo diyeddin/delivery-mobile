@@ -93,13 +93,13 @@ export default function HomeScreen({ navigation }: Props) {
       // 1. SECURITY CHECK: Do we have a token?
       const token = await SecureStore.getItemAsync('token'); // or your auth storage key
       if (!token) {
+        // We can still fetch public stores if your API allows it without auth
+        // If stores require auth too, return here.
+        setIsGuest(true);
         // If logged out, just clear personal data and stop
         setActiveOrder(null);
         setAddressLabel(t('welcome'));
         setAddressLine(t('please_login'));
-        // We can still fetch public stores if your API allows it without auth
-        // If stores require auth too, return here.
-        setIsGuest(true);
       }
 
       // 2. Fetch Personal Data (Only if logged in)

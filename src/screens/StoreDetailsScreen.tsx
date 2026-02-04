@@ -220,8 +220,8 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
           });
           Toast.show({ 
             type: 'success', 
-            text1: 'Added', 
-            text2: `${item.name} added to cart.` 
+            text1: t('added_to_bag'), 
+            text2: `${item.name} ${t('added_to_cart_message') }` 
           });
         }}
       />

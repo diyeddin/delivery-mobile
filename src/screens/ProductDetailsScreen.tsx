@@ -131,7 +131,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
             Toast.show({
               type: 'success',
               text1: t('added_to_bag'),
-              text2: t('added_to_cart_message'),
+              text2: `${product.name} ${t('added_to_cart_message')}`,
             });
             // navigation.goBack(); 
           }}

@@ -172,8 +172,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           });
           Toast.show({
             type: 'success',
-            text1: t('added_to_bag'),
-            text2: t('added_to_cart_message'),
+            text1: t('added_to_bag'), 
+            text2: `${item.name} ${t('added_to_cart_message') }` 
           });
         }}
       />

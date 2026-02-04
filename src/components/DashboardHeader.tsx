@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Search, MapPin, ChevronDown } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Category {
   id: string;
@@ -44,12 +45,14 @@ export default function DashboardHeader({
   activeCategory,
   onCategoryPress,
 }: DashboardHeaderProps) {
+  const { t } = useLanguage();
+
   const handleAddressPress = () => {
     if (isGuest) {
       Toast.show({
         type: 'info',
-        text1: 'Login Required',
-        text2: 'Please log in to change your address',
+        text1: t('login_required'),
+        text2: t('login_to_change_address'),
       });
       return;
     }
