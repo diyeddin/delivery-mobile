@@ -97,7 +97,7 @@ export default function StoreGrid({
       
       // 2-Column Grid
       numColumns={2} 
-      columnWrapperStyle={{ justifyContent: 'space-between', gap: 12 }}
+      columnWrapperStyle={{ justifyContent: 'space-between', gap: 8 }}
       
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
@@ -119,7 +119,7 @@ export default function StoreGrid({
       
       renderItem={({ item, index }) => (
         // Wrapper for 2-column layout width
-        <View style={{ width: '48%', marginBottom: 12 }}>
+        <View style={{ width: '49%', marginBottom: 8 }}>
           <FadeInWrapper index={index}>
             <StoreCard 
               id={item.id}

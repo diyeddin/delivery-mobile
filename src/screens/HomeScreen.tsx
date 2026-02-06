@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
-  View, Text, FlatList, Image, TouchableOpacity, LayoutAnimation, Dimensions, ActivityIndicator 
+  View, Text, TouchableOpacity, LayoutAnimation, ActivityIndicator 
 } from 'react-native';
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
+import PromoCarousel from '../components/PromoCarousel'; // 👈 Import the new component
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Truck, ChevronDown, MapPin, User } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,17 +13,7 @@ import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
-const { width } = Dimensions.get('window');
-const GAP = 12; 
-const CARD_WIDTH = width - 32; 
-const SNAP_INTERVAL = CARD_WIDTH + GAP; 
 const PAGE_SIZE = 20;
-
-const PROMOS = [
-  { id: 1, title: 'Summer Collection', subtitle: 'New Arrivals', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop' },
-  { id: 2, title: 'Tech Week', subtitle: 'Up to 30% Off', image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=800&auto=format&fit=crop' },
-  { id: 3, title: 'Food Court', subtitle: 'Free Delivery', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop' },
-];
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }
@@ -63,10 +54,8 @@ export default function HomeScreen({ navigation }: Props) {
   const [isWidgetExpanded, setIsWidgetExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isGuest, setIsGuest] = useState(true);
-  
-  // Carousel State
-  const [activeSlide, setActiveSlide] = useState(0);
-  const carouselRef = useRef<FlatList>(null);
+
+  // ❌ Removed Carousel State (activeSlide, carouselRef) - Handled in Component now
 
   const CATEGORIES = [
     { id: 'All', label: t('category_all') },
@@ -132,41 +121,25 @@ export default function HomeScreen({ navigation }: Props) {
     }
   };
 
-  // --- 2. FETCH STORES (Paginated & Categorized) ---
+  // --- 2. FETCH STORES ---
   const fetchStores = async (isReset: boolean = false) => {
     const currentOffset = isReset ? 0 : stores.length;
-    
     if (!isReset && (!hasMore || fetchingMore)) return;
 
     if (isReset) setLoading(true);
     else setFetchingMore(true);
 
     try {
-      const params: any = {
-        limit: PAGE_SIZE,
-        offset: currentOffset,
-      };
-
-      // Only Category Logic remains (Search Logic Removed)
-      if (activeCategory !== 'All') {
-        params.category = activeCategory;
-      }
+      const params: any = { limit: PAGE_SIZE, offset: currentOffset };
+      if (activeCategory !== 'All') params.category = activeCategory;
       
       const res = await client.get('/stores/', { params });
       const newItems = res.data;
 
-      if (isReset) {
-        setStores(newItems);
-      } else {
-        setStores(prev => [...prev, ...newItems]);
-      }
+      if (isReset) setStores(newItems);
+      else setStores(prev => [...prev, ...newItems]);
 
-      if (newItems.length < PAGE_SIZE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-
+      setHasMore(newItems.length >= PAGE_SIZE);
     } catch (error) {
       console.error("Store fetch error:", error);
     } finally {
@@ -177,32 +150,9 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   // --- 3. EFFECTS ---
-  
-  // Initial Load
-  useEffect(() => {
-    fetchUserData();
-    // fetchStores(true) is called by category effect
-  }, []);
+  useEffect(() => { fetchUserData(); }, []);
 
-  // Category Effect (Instant)
-  useEffect(() => {
-    fetchStores(true);
-  }, [activeCategory]);
-
-
-  // Carousel Auto-scroll
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (carouselRef.current && PROMOS.length > 0) {
-        let nextIndex = activeSlide + 1;
-        if (nextIndex >= PROMOS.length) nextIndex = 0;
-        carouselRef.current.scrollToIndex({ index: nextIndex, animated: true });
-        setActiveSlide(nextIndex);
-      }
-    }, 4000); 
-    return () => clearInterval(interval);
-  }, [activeSlide]);
-
+  useEffect(() => { fetchStores(true); }, [activeCategory]);
 
   // --- HANDLERS ---
   const onRefresh = useCallback(() => {
@@ -213,9 +163,7 @@ export default function HomeScreen({ navigation }: Props) {
   }, [activeCategory]);
 
   const handleLoadMore = () => {
-    if (!loading && !fetchingMore && hasMore) {
-      fetchStores(false);
-    }
+    if (!loading && !fetchingMore && hasMore) fetchStores(false);
   };
 
   const toggleWidget = () => {
@@ -242,49 +190,6 @@ export default function HomeScreen({ navigation }: Props) {
       return 0; 
   };
 
-
-  // --- RENDER ---
-  const renderCarousel = () => (
-      <View className="mb-6">
-        <FlatList
-          ref={carouselRef}
-          data={PROMOS}
-          horizontal
-          pagingEnabled={false} 
-          snapToInterval={SNAP_INTERVAL} 
-          snapToAlignment="start"
-          decelerationRate="fast" 
-          disableIntervalMomentum={true}
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{ paddingHorizontal: 0 }}
-          onScroll={(event) => {
-            const offsetX = event.nativeEvent.contentOffset.x;
-            const index = Math.round(offsetX / SNAP_INTERVAL);
-            if (index !== activeSlide) setActiveSlide(index);
-          }}
-          scrollEventThrottle={16} 
-          renderItem={({ item, index }) => (
-            <View 
-              style={{ width: CARD_WIDTH, marginRight: index === PROMOS.length - 1 ? 0 : GAP }} 
-              className="h-40 rounded-2xl overflow-hidden relative"
-            >
-              <Image source={{ uri: item.image }} className="w-full h-full" resizeMode="cover" />
-              <View className="absolute inset-0 bg-black/30 justify-center px-6">
-                <Text className="text-gold-400 font-bold uppercase tracking-widest text-xs mb-1">{item.subtitle}</Text>
-                <Text className="text-white font-serif text-3xl">{item.title}</Text>
-              </View>
-            </View>
-          )}
-        />
-        <View className="flex-row justify-center mt-3 space-x-2">
-          {PROMOS.map((_, index) => (
-            <View key={index} className={`h-1.5 rounded-full transition-all mx-0.5 ${index === activeSlide ? 'w-6 bg-gold-500' : 'w-1.5 bg-gray-600'}`} />
-          ))}
-        </View>
-      </View>
-  );
-
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
@@ -297,11 +202,8 @@ export default function HomeScreen({ navigation }: Props) {
           addressLine={addressLine}
           isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
-          
-          // 👇 Simplified Search Prop
           searchPlaceholder={t('search_stores')}
           onSearchPress={() => navigation.navigate('Search', { type: 'store' })}
-          
           categories={CATEGORIES}
           activeCategory={activeCategory}
           onCategoryPress={setActiveCategory}
@@ -328,7 +230,9 @@ export default function HomeScreen({ navigation }: Props) {
 
         ListHeaderComponent={
           <View>
-             {renderCarousel()}
+             {/* 👇 NEW CAROUSEL COMPONENT */}
+             <PromoCarousel /> 
+             
              <View className="flex-row justify-between items-center mb-3">
                <Text className="text-base font-serif text-onyx font-bold">
                  {activeCategory === 'All' ? t('all_shops') : `${activeCategory}`}
@@ -355,6 +259,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={toggleWidget}
             className={`bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-black/50 ${isWidgetExpanded ? 'pb-5' : 'p-0'}`}
           >
+             {/* Widget Content (Kept exactly as it was) */}
             <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
               <View className="flex-row items-center flex-1">
                 <View className="relative me-4">
