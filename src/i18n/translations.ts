@@ -33,6 +33,7 @@ export const translations = {
     create_account: "Register",
     addToCart: "Add to Cart",
     checkout: "Checkout",
+    clear: "Clear",
     
     // Profile
     language: "Language",
@@ -94,6 +95,11 @@ export const translations = {
     browse: "Browse",
     marketplace: "Marketplace",
     stores: "Stores",
+    recent_searches: "Recent Searches",
+    no_results_found: "No Results Found",
+    try_different_keyword: "Try a different keyword.",
+    no_recent_searches: "No recent searches.",
+    
     
     // Authentication
     sign_in: "Sign In",
@@ -279,6 +285,7 @@ export const translations = {
     create_account: "انشاء حساب",
     addToCart: "إضافة للسلة",
     checkout: "إتمام الشراء",
+    clear: "مسح",
     
     // Profile
     language: "اللغة",
@@ -340,6 +347,11 @@ export const translations = {
     browse: "تصفح",
     marketplace: "السوق",
     stores: "المتاجر",
+    recent_searches: "عمليات البحث الأخيرة",
+    no_results_found: "لم يتم العثور على نتائج",
+    try_different_keyword: "حاول كلمة مفتاحية مختلفة.",
+    no_recent_searches: "لا توجد عمليات بحث حديثة.",
+
     
     // Authentication
     sign_in: "تسجيل الدخول",

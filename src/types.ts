@@ -34,10 +34,11 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   MarketplaceMain: undefined;
   StoreDetails: { storeId: number; name: string };
-  ProductDetails: { productId: number; name: string; price: number; description: string; image_url?: string };
+  ProductDetails: { productId: number; name: string; price: number; description: string; image_url?: string, category?: string };
   Checkout: undefined;
   MainTabs: { screen?: keyof MainTabParamList } | undefined;
   OrderDetails: { orderId: number };
   Addresses: undefined;
   AddAddress: { addressToEdit?: Address } | undefined;
+  Search: { type: 'store' | 'product' };
 };

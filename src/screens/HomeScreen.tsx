@@ -16,9 +16,8 @@ const { width } = Dimensions.get('window');
 const GAP = 12; 
 const CARD_WIDTH = width - 32; 
 const SNAP_INTERVAL = CARD_WIDTH + GAP; 
-const PAGE_SIZE = 20; // ⚡ Limit for Pagination
+const PAGE_SIZE = 20;
 
-// ... Promos Array ...
 const PROMOS = [
   { id: 1, title: 'Summer Collection', subtitle: 'New Arrivals', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop' },
   { id: 2, title: 'Tech Week', subtitle: 'Up to 30% Off', image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=800&auto=format&fit=crop' },
@@ -28,14 +27,13 @@ const PROMOS = [
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }
 
-// ... Interfaces (Store, ActiveOrder) ...
 interface Store {
   id: number;
   name: string;
   description: string;
   category: string;
   image_url?: string;
-  banner_url?: string; // Make sure to add this
+  banner_url?: string;
 }
 
 interface ActiveOrder {
@@ -49,7 +47,7 @@ interface ActiveOrder {
 export default function HomeScreen({ navigation }: Props) {
   const { t } = useLanguage();
   
-  // Data State
+  // --- STATE ---
   const [stores, setStores] = useState<Store[]>([]);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   
@@ -62,7 +60,6 @@ export default function HomeScreen({ navigation }: Props) {
   // UI State
   const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
   const [addressLine, setAddressLine] = useState<string>(t('select_location'));
-  const [searchText, setSearchText] = useState('');
   const [isWidgetExpanded, setIsWidgetExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isGuest, setIsGuest] = useState(true);
@@ -70,9 +67,6 @@ export default function HomeScreen({ navigation }: Props) {
   // Carousel State
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<FlatList>(null);
-  
-  // Search Timer
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const CATEGORIES = [
     { id: 'All', label: t('category_all') },
@@ -83,7 +77,6 @@ export default function HomeScreen({ navigation }: Props) {
     { id: 'Home', label: t('category_home') },
   ];
 
-  // Timeline Steps
   const TIMELINE_STEPS = [
     { label: t('status_confirmed'), icon: ShoppingBag },
     { label: t('status_driver'), icon: User },
@@ -91,21 +84,20 @@ export default function HomeScreen({ navigation }: Props) {
     { label: t('status_arriving'), icon: MapPin },
   ];
 
-  // --- 1. FETCH USER DATA (Orders, Address) ---
+  // --- 1. FETCH USER DATA ---
   const fetchUserData = async () => {
     try {
       const token = await SecureStore.getItemAsync('token');
       if (!token) {
-        setIsGuest(true);
         setActiveOrder(null);
         setAddressLabel(t('welcome'));
         setAddressLine(t('please_login'));
+        setIsGuest(true);
         return;
       }
 
       setIsGuest(false);
       
-      // Address
       try {
         const addrRes = await client.get('/addresses/default');
         if (addrRes.data) {
@@ -115,13 +107,11 @@ export default function HomeScreen({ navigation }: Props) {
         }
       } catch (e) { /* Ignore */ }
 
-      // Active Orders
       try {
         const orderRes = await client.get('/orders/me'); 
         const activeList = orderRes.data.filter((o: ActiveOrder) => 
           ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
         );
-        // Simple sort logic (highest priority first)
         const getStatusScore = (status: string) => {
             if (status === 'in_transit') return 5;
             if (status === 'picked_up') return 4;
@@ -142,11 +132,10 @@ export default function HomeScreen({ navigation }: Props) {
     }
   };
 
-  // --- 2. FETCH STORES (Paginated) ---
+  // --- 2. FETCH STORES (Paginated & Categorized) ---
   const fetchStores = async (isReset: boolean = false) => {
     const currentOffset = isReset ? 0 : stores.length;
     
-    // Stop if already loading or no more items
     if (!isReset && (!hasMore || fetchingMore)) return;
 
     if (isReset) setLoading(true);
@@ -158,18 +147,11 @@ export default function HomeScreen({ navigation }: Props) {
         offset: currentOffset,
       };
 
-      // Server-side search
-      if (searchText.trim().length > 0) {
-        params.q = searchText;
-      }
-
+      // Only Category Logic remains (Search Logic Removed)
       if (activeCategory !== 'All') {
         params.category = activeCategory;
       }
       
-      // Note: Backend doesn't support 'category' filter yet, only 'q'.
-      // If you added it, pass it here: if (activeCategory !== 'All') params.category = activeCategory;
-
       const res = await client.get('/stores/', { params });
       const newItems = res.data;
 
@@ -179,7 +161,6 @@ export default function HomeScreen({ navigation }: Props) {
         setStores(prev => [...prev, ...newItems]);
       }
 
-      // Check if we reached the end
       if (newItems.length < PAGE_SIZE) {
         setHasMore(false);
       } else {
@@ -200,39 +181,14 @@ export default function HomeScreen({ navigation }: Props) {
   // Initial Load
   useEffect(() => {
     fetchUserData();
-    // fetchStores(true);
+    // fetchStores(true) is called by category effect
   }, []);
 
-  // A. Search Effect (DEBOUNCED - 500ms delay)
+  // Category Effect (Instant)
   useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-
-    searchTimeout.current = setTimeout(() => {
-      fetchStores(true);
-    }, 500);
-
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [searchText]); // 👈 Only triggers on text change
-
-  // B. Category Effect (INSTANT - No delay)
-  useEffect(() => {
-    // Clear any pending search timer to prevent double-fetching
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    
-    // Fetch immediately
     fetchStores(true);
-  }, [activeCategory]); // 👈 Only triggers on category change
+  }, [activeCategory]);
 
-  // Debounced Search Listener
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      fetchStores(true);
-    }, 500);
-    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
-  }, [searchText]);
 
   // Carousel Auto-scroll
   useEffect(() => {
@@ -254,7 +210,7 @@ export default function HomeScreen({ navigation }: Props) {
     setHasMore(true);
     fetchUserData();
     fetchStores(true); 
-  }, [searchText, activeCategory]);
+  }, [activeCategory]);
 
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) {
@@ -268,7 +224,7 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   // Helpers
-  const getStatusText = (status: string) => { /* ... same as before ... */ 
+  const getStatusText = (status: string) => {
       switch(status) {
         case 'confirmed': return t('status_preparing');
         case 'assigned': return t('status_driver_assigned');
@@ -279,7 +235,7 @@ export default function HomeScreen({ navigation }: Props) {
       }
   };
   
-  const getCurrentStepIndex = (status: string) => { /* ... same as before ... */
+  const getCurrentStepIndex = (status: string) => {
       if (status === 'delivered') return 3;
       if (['picked_up', 'in_transit'].includes(status)) return 2;
       if (['assigned'].includes(status)) return 1;
@@ -333,7 +289,7 @@ export default function HomeScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* 1. HEADER */}
-      <View className="px-4 pb-2 z-1 bg-creme">
+      <View className="px-6" style={{ paddingHorizontal: 16 }}>
         <DashboardHeader 
           subtitle="Golden Rose"
           title="Mall Delivery"
@@ -341,9 +297,11 @@ export default function HomeScreen({ navigation }: Props) {
           addressLine={addressLine}
           isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
-          searchText={searchText}
-          onSearchChange={setSearchText}
+          
+          // 👇 Simplified Search Prop
           searchPlaceholder={t('search_stores')}
+          onSearchPress={() => navigation.navigate('Search', { type: 'store' })}
+          
           categories={CATEGORIES}
           activeCategory={activeCategory}
           onCategoryPress={setActiveCategory}
@@ -352,13 +310,12 @@ export default function HomeScreen({ navigation }: Props) {
 
       {/* 2. PAGINATED STORE GRID */}
       <StoreGrid 
-        stores={stores} // Use the server-side stores list
+        stores={stores}
         isLoading={loading}
         refreshing={refreshing}
         onRefresh={onRefresh}
         onStorePress={(store) => navigation.navigate('StoreDetails', { storeId: store.id, name: store.name })}
         
-        // 👇 PAGINATION
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
@@ -377,7 +334,6 @@ export default function HomeScreen({ navigation }: Props) {
                  {activeCategory === 'All' ? t('all_shops') : `${activeCategory}`}
                </Text>
                <Text className="text-xs text-gray-400">
-                   {/* We don't know total count from API yet, so just show current loaded count */}
                    {stores.length}+ {t('stores')}
                </Text>
              </View>
@@ -386,7 +342,7 @@ export default function HomeScreen({ navigation }: Props) {
         
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingBottom: activeOrder ? 180 : 80, // Space for widget
+          paddingBottom: activeOrder ? 180 : 80,
           paddingTop: 10
         }}
       />
@@ -399,7 +355,6 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={toggleWidget}
             className={`bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-black/50 ${isWidgetExpanded ? 'pb-5' : 'p-0'}`}
           >
-             {/* ... Same Widget Code as before ... */}
             <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
               <View className="flex-row items-center flex-1">
                 <View className="relative me-4">

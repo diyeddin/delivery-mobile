@@ -33,6 +33,7 @@ import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 
 import { HomeStackParamList, ProfileStackParamList } from './src/types';
 import RegisterScreen from './src/screens/RegisterScreen';
+import SearchScreen from './src/screens/SearchScreen';
 
 // ---------------------------------------------------------
 // 1. COMPONENTS & CONFIG
@@ -117,6 +118,7 @@ function HomeStackNavigator() {
       <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} /> 
       <Stack.Screen name="Addresses" component={AddressesScreen} />
       <Stack.Screen name="AddAddress" component={AddAddressScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} />
     </Stack.Navigator>
   );
 }
@@ -130,6 +132,7 @@ function MarketplaceStackNavigator() {
       <MarketplaceStack.Screen name="StoreDetails" component={StoreDetailsScreen} />
       <MarketplaceStack.Screen name="Addresses" component={AddressesScreen} />
       <MarketplaceStack.Screen name="AddAddress" component={AddAddressScreen} />
+      <MarketplaceStack.Screen name="Search" component={SearchScreen} />
     </MarketplaceStack.Navigator>
   );
 }

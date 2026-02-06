@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
@@ -15,24 +15,23 @@ interface Product {
   price: number;
   image_url?: string;
   category?: string;
-  description?: string;
+  description: string;
 }
 
-const PAGE_SIZE = 20; // Number of items to fetch per page
+const PAGE_SIZE = 20;
 
 export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const { t } = useLanguage();
   
   // --- STATE ---
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);          // Initial full-screen loader
-  const [fetchingMore, setFetchingMore] = useState(false); // Bottom spinner
-  const [refreshing, setRefreshing] = useState(false);     // Pull-to-refresh
+  const [loading, setLoading] = useState(true);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
-  // Filters & Pagination
-  const [searchText, setSearchText] = useState('');
+  // Filters (Search Removed)
   const [activeCategory, setActiveCategory] = useState('All');
-  const [hasMore, setHasMore] = useState(true); // Stop fetching if backend is empty
+  const [hasMore, setHasMore] = useState(true);
   
   // Address & User
   const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
@@ -40,14 +39,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const [isGuest, setIsGuest] = useState(true);
 
   const { addToCart } = useCart();
-  
-  // Timer for Debouncing Search
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // --- MOCK CATEGORIES ---
-  // Note: Since backend currently doesn't have a 'category' filter param in the router we wrote,
-  // filtering by category will still be client-side OR require backend update.
-  // For now, I will keep it simple.
   const CATEGORIES = [
     { id: 'All', label: t('category_all_items') },
     { id: 'Clothing', label: t('category_fashion') },
@@ -59,46 +51,33 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
   // --- 1. CORE DATA FETCHING ---
   const fetchProducts = async (isReset: boolean = false) => {
-    // Determine the offset
-    // If resetting (Search change / Refresh), offset is 0.
-    // If loading more, offset is current length.
     const currentOffset = isReset ? 0 : products.length;
     
-    // Prevent fetching if we are already loading or if no more data
     if (!isReset && (!hasMore || fetchingMore)) return;
 
     if (isReset) setLoading(true);
     else setFetchingMore(true);
 
     try {
-      // Build Params
       const params: any = {
         limit: PAGE_SIZE,
         offset: currentOffset,
       };
 
-      // Only send 'q' if user typed something
-      if (searchText.trim().length > 0) {
-        params.q = searchText;
-      }
-
-      // 👇 NEW: Send Category to Backend
+      // Only Category Logic Remains
       if (activeCategory !== 'All') {
         params.category = activeCategory;
       }
 
-      // API Call
       const res = await client.get('/products/', { params });
       const newItems = res.data;
 
       if (isReset) {
         setProducts(newItems);
       } else {
-        // Append new items to old items
         setProducts(prev => [...prev, ...newItems]);
       }
 
-      // If we got fewer than requested, we reached the end
       if (newItems.length < PAGE_SIZE) {
         setHasMore(false);
       } else {
@@ -114,10 +93,10 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 2. INITIAL LOAD & USER CHECK ---
+  // --- 2. INITIAL LOAD ---
   useEffect(() => {
     checkUserAndAddress();
-    // fetchProducts(true); // Load Page 1
+    // fetchProducts(true) is handled by category effect
   }, []);
 
   const checkUserAndAddress = async () => {
@@ -139,41 +118,23 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 3. HANDLE SEARCH & CATEGORY ---
+  // --- 3. HANDLE CATEGORY (INSTANT) ---
   useEffect(() => {
-    // Debounce Search, but Instant Category Click
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    
-    searchTimeout.current = setTimeout(() => {
-      fetchProducts(true); // Reset and fetch new results
-    }, 500);
-
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [searchText]);
-
-  // --- 3.1. HANDLE CATEGORY (INSTANT) ---
-  useEffect(() => {
-    // 1. Clear any pending search timer so we don't double-fetch
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    
-    // 2. Fetch immediately! No delay.
     fetchProducts(true);
-  }, [activeCategory]); // 👈 Only depends on activeCategory
+  }, [activeCategory]);
 
-  // --- 4. HANDLE REFRESH ---
+
+  // --- 4. HANDLERS ---
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setHasMore(true);
     checkUserAndAddress();
     fetchProducts(true);
-  }, [activeCategory, searchText]);
+  }, [activeCategory]);
 
-  // --- 5. HANDLE LOAD MORE ---
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) {
-      fetchProducts(false); // Load Next Page
+      fetchProducts(false);
     }
   };
 
@@ -181,7 +142,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* HEADER */}
-      <View className="px-6 z-1" style={{ paddingHorizontal: 16 }}>
+      <View className="px-6" style={{ paddingHorizontal: 16 }}>
         <DashboardHeader 
           subtitle={t('browse')}
           title={t('marketplace')}
@@ -190,9 +151,9 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
 
-          searchText={searchText}
-          onSearchChange={setSearchText}
+          // 👇 Simplified Search Trigger
           searchPlaceholder={t('search_products')}
+          onSearchPress={() => navigation.navigate('Search', { type: 'product' })}
 
           categories={CATEGORIES}
           activeCategory={activeCategory}
@@ -207,15 +168,14 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         refreshing={refreshing}
         onRefresh={onRefresh}
         
-        // 👇 PAGINATION PROPS
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5} // Trigger when user is halfway down the last item
+        onEndReachedThreshold={0.5}
         ListFooterComponent={
           fetchingMore ? (
             <View className="py-6">
               <ActivityIndicator color="#D4AF37" />
             </View>
-          ) : <View className="h-20" /> // Spacer
+          ) : <View className="h-20" />
         }
         
         contentContainerStyle={{

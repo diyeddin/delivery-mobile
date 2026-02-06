@@ -49,7 +49,7 @@ interface Product {
   price: number;
   image_url?: string;
   category?: string;
-  description?: string;
+  description: string;
 }
 
 interface ProductGridProps {

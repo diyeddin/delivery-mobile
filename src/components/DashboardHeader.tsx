@@ -1,110 +1,73 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Search, MapPin, ChevronDown } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 
-interface Category {
-  id: string;
-  label: string;
-}
+interface Category { id: string; label: string; }
 
 interface DashboardHeaderProps {
-  // Text Props
   subtitle: string;
   title: string;
-  
-  // Address Props
   addressLabel: string;
   addressLine: string;
   onAddressPress: () => void;
   isGuest?: boolean;
-
-  // Search Props
-  searchText: string;
-  onSearchChange: (text: string) => void;
+  
+  // 👇 Replaced "searchText/onChange" with simple "onSearchPress"
+  onSearchPress: () => void; 
   searchPlaceholder: string;
 
-  // Category Props
   categories: Category[];
   activeCategory: string;
   onCategoryPress: (id: string) => void;
 }
 
 export default function DashboardHeader({
-  subtitle,
-  title,
-  addressLabel,
-  addressLine,
-  onAddressPress,
-  isGuest = false,
-  searchText,
-  onSearchChange,
-  searchPlaceholder,
-  categories,
-  activeCategory,
-  onCategoryPress,
+  subtitle, title, addressLabel, addressLine, onAddressPress, isGuest = false,
+  onSearchPress, searchPlaceholder, categories, activeCategory, onCategoryPress,
 }: DashboardHeaderProps) {
   const { t } = useLanguage();
 
-  const handleAddressPress = () => {
-    if (isGuest) {
-      Toast.show({
-        type: 'info',
-        text1: t('login_required'),
-        text2: t('login_to_change_address'),
-      });
-      return;
-    }
-    onAddressPress();
-  };
-
   return (
     <View className="pt-3">
-
-      {/* SEARCH BAR */}
+      {/* TOP ROW: Search + Address */}
       <View className="flex-row items-center mb-2 gap-1">
-        {/* PILL 1: SEARCH BAR (Takes remaining space) */}
-        <View className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2 shadow-sm border border-gray-100">
-          <Search color="#9CA3AF" size={16} />
-          <TextInput 
-            placeholder={searchPlaceholder}
-            placeholderTextColor="#9CA3AF"
-            className="ms-2 flex-1 text-onyx text-sm p-0"
-            value={searchText}
-            onChangeText={onSearchChange}
-          />
-        </View>
         
-        {/* PILL 2: ADDRESS (Side by side) */}
+        {/* PILL 1: FAKE SEARCH BAR (Clickable) */}
         <TouchableOpacity 
-          onPress={handleAddressPress} 
+          onPress={onSearchPress} // 👈 Navigates to new screen
+          activeOpacity={0.9}
+          className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100"
+        >
+          <Search color="#9CA3AF" size={16} />
+          <Text className="ms-2 text-gray-400 text-sm">
+            {searchPlaceholder}
+          </Text>
+        </TouchableOpacity>
+        
+        {/* PILL 2: ADDRESS */}
+        <TouchableOpacity 
+          onPress={isGuest ? () => Toast.show({type: 'info', text1: t('login_required')}) : onAddressPress} 
           activeOpacity={0.7} 
-          className="flex-row items-center bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100"
+          className="flex-row items-center bg-white px-3 py-2.5 rounded-xl shadow-sm border border-gray-100"
         >
             <MapPin size={12} color="#D4AF37" />
             <View className="ms-1.5 me-1">
               <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">{addressLabel}</Text>
-              {/* <Text className="text-[6px] text-onyx font-bold" numberOfLines={1}>{addressLine}</Text> */}
             </View>
             <ChevronDown size={12} color="#9CA3AF" />
         </TouchableOpacity>
       </View>
 
       {/* CATEGORIES */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        className="mb-2"
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
             onPress={() => onCategoryPress(cat.id)}
             className={`me-1 px-4 py-1.5 rounded-full border ${
-              activeCategory === cat.id 
-                ? 'bg-onyx border-onyx' 
-                : 'bg-white border-gray-200'
+              activeCategory === cat.id ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
             }`}
           >
             <Text className={`text-xs px-1 font-bold tracking-wide ${
