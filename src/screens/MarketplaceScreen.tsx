@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,10 +18,36 @@ interface Product {
   description?: string;
 }
 
+const PAGE_SIZE = 20; // Number of items to fetch per page
+
 export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const { t } = useLanguage();
   
+  // --- STATE ---
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);          // Initial full-screen loader
+  const [fetchingMore, setFetchingMore] = useState(false); // Bottom spinner
+  const [refreshing, setRefreshing] = useState(false);     // Pull-to-refresh
+  
+  // Filters & Pagination
+  const [searchText, setSearchText] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [hasMore, setHasMore] = useState(true); // Stop fetching if backend is empty
+  
+  // Address & User
+  const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
+  const [addressLine, setAddressLine] = useState<string>(t('select_location'));
+  const [isGuest, setIsGuest] = useState(true);
+
+  const { addToCart } = useCart();
+  
+  // Timer for Debouncing Search
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
   // --- MOCK CATEGORIES ---
+  // Note: Since backend currently doesn't have a 'category' filter param in the router we wrote,
+  // filtering by category will still be client-side OR require backend update.
+  // For now, I will keep it simple.
   const CATEGORIES = [
     { id: 'All', label: t('category_all_items') },
     { id: 'Clothing', label: t('category_fashion') },
@@ -29,99 +55,126 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     { id: 'Food', label: t('category_food') },
     { id: 'Home', label: t('category_home') },
   ];
-  
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  
-  // --- ADDRESS STATE ---
-  const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
-  const [addressLine, setAddressLine] = useState<string>(t('select_location'));
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  // --- 1. CORE DATA FETCHING ---
+  const fetchProducts = async (isReset: boolean = false) => {
+    // Determine the offset
+    // If resetting (Search change / Refresh), offset is 0.
+    // If loading more, offset is current length.
+    const currentOffset = isReset ? 0 : products.length;
+    
+    // Prevent fetching if we are already loading or if no more data
+    if (!isReset && (!hasMore || fetchingMore)) return;
 
-  const [isGuest, setIsGuest] = useState(true);
+    if (isReset) setLoading(true);
+    else setFetchingMore(true);
 
-  const { addToCart } = useCart();
-
-  const fetchData = async () => {
     try {
-      // 1. Check if user is logged in
-      const token = await SecureStore.getItemAsync('token');
+      // Build Params
+      const params: any = {
+        limit: PAGE_SIZE,
+        offset: currentOffset,
+      };
 
-      if (token) {
-        setIsGuest(false);
-        // --- LOGGED IN: Fetch User Address ---
-        try {
-          const addrRes = await client.get('/addresses/default');
-          if (addrRes.data) {
-            setAddressLabel(addrRes.data.label || t('deliver_to'));
-            const fullAddress = addrRes.data.address_line;
-            setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
-          }
-        } catch (addrErr: any) {
-          // Ignore 404 (No address set) and 401 (Token expired)
-          if (addrErr.response?.status !== 404 && addrErr.response?.status !== 401) {
-             console.error("Address fetch error:", addrErr);
-          }
-        }
-      } else {
-        // --- LOGGED OUT: Reset Header UI ---
-        setAddressLabel(t('welcome'));
-        setAddressLine(t('please_login'));
-        setIsGuest(true);
+      // Only send 'q' if user typed something
+      if (searchText.trim().length > 0) {
+        params.q = searchText;
       }
 
-      // 2. Fetch Products (Public Access)
-      // We run this regardless of login status
-      const res = await client.get('/products/'); 
-      setProducts(res.data);
-      setFilteredProducts(res.data);
+      // API Call
+      const res = await client.get('/products/', { params });
+      const newItems = res.data;
+
+      if (isReset) {
+        setProducts(newItems);
+      } else {
+        // Append new items to old items
+        setProducts(prev => [...prev, ...newItems]);
+      }
+
+      // If we got fewer than requested, we reached the end
+      if (newItems.length < PAGE_SIZE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
 
     } catch (error) {
-      console.error("Failed to fetch marketplace data:", error);
+      console.error("Fetch error:", error);
     } finally {
       setLoading(false);
+      setFetchingMore(false);
       setRefreshing(false);
     }
   };
 
+  // --- 2. INITIAL LOAD & USER CHECK ---
   useEffect(() => {
-    fetchData();
+    checkUserAndAddress();
+    fetchProducts(true); // Load Page 1
   }, []);
 
-  // --- FILTERING LOGIC ---
+  const checkUserAndAddress = async () => {
+    const token = await SecureStore.getItemAsync('token');
+    if (token) {
+      setIsGuest(false);
+      try {
+        const addrRes = await client.get('/addresses/default');
+        if (addrRes.data) {
+          setAddressLabel(addrRes.data.label || t('deliver_to'));
+          const full = addrRes.data.address_line;
+          setAddressLine(full.length > 25 ? full.substring(0, 25) + '...' : full);
+        }
+      } catch (e) { /* Ignore */ }
+    } else {
+      setAddressLabel(t('welcome'));
+      setAddressLine(t('please_login'));
+      setIsGuest(true);
+    }
+  };
+
+  // --- 3. HANDLE SEARCH (DEBOUNCED) ---
   useEffect(() => {
-    let result = products;
+    // When text changes, wait 500ms before hitting server
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    searchTimeout.current = setTimeout(() => {
+      fetchProducts(true); // Reset and fetch new results
+    }, 500);
 
-    if (activeCategory !== 'All') {
-      result = result.filter(p => 
-        p.category?.toLowerCase() === activeCategory.toLowerCase()
-      );
-    }
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [searchText]);
 
-    if (searchText) {
-      const lowerText = searchText.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(lowerText)
-      );
-    }
-
-    setFilteredProducts(result);
-  }, [searchText, activeCategory, products]);
-
+  // --- 4. HANDLE REFRESH ---
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData();
+    setHasMore(true);
+    checkUserAndAddress();
+    fetchProducts(true);
   }, []);
+
+  // --- 5. HANDLE LOAD MORE ---
+  const handleLoadMore = () => {
+    if (!loading && !fetchingMore && hasMore) {
+      fetchProducts(false); // Load Next Page
+    }
+  };
+
+  // --- 6. CATEGORY FILTER (CLIENT SIDE FOR NOW) ---
+  // Since we haven't updated backend for Categories yet, 
+  // we filter the *visible* list. 
+  // TODO: Add category_id to backend GET /products
+  const visibleProducts = activeCategory === 'All' 
+    ? products 
+    : products.filter(p => p.category === activeCategory);
 
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
-      {/* FIXED HEADER */}
-      <View className="px-6 z-9" style={{ paddingHorizontal: 16 }} >
+      {/* HEADER */}
+      <View className="px-6 z-10" style={{ paddingHorizontal: 16 }}>
         <DashboardHeader 
           subtitle={t('browse')}
           title={t('marketplace')}
@@ -140,14 +193,24 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         />
       </View>
 
-      {/* REUSABLE PRODUCT GRID */}
+      {/* LIST */}
       <ProductGrid
-        products={filteredProducts}
+        products={visibleProducts}
         isLoading={loading}
         refreshing={refreshing}
         onRefresh={onRefresh}
         
-        // Align grid with header: 16px header padding - 8px item padding = 8px container padding
+        // 👇 PAGINATION PROPS
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5} // Trigger when user is halfway down the last item
+        ListFooterComponent={
+          fetchingMore ? (
+            <View className="py-6">
+              <ActivityIndicator color="#D4AF37" />
+            </View>
+          ) : <View className="h-20" /> // Spacer
+        }
+        
         contentContainerStyle={{
           paddingHorizontal: 0,
           paddingBottom: 50,
@@ -173,7 +236,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           Toast.show({
             type: 'success',
             text1: t('added_to_bag'), 
-            text2: `${item.name} ${t('added_to_cart_message') }` 
+            text2: item.name
           });
         }}
       />

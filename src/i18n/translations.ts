@@ -229,7 +229,7 @@ export const translations = {
     update_failed: "Update Failed",
     product_fetch_error: "Could not fetch latest product details.",
     added_to_bag: "Added to Bag",
-    added_to_cart_message: "Item has been added to your cart.",
+    added_to_cart_message: "Item has been added to your cart.",    // fix later, make it include product name
     no_products: "No products found.",
     no_stores: "No stores found.",
     loading_store: "Loading store...",
