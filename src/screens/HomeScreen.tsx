@@ -289,7 +289,7 @@ export default function HomeScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* 1. HEADER */}
-      <View className="px-6" style={{ paddingHorizontal: 16 }}>
+      <View className="px-6" style={{ paddingHorizontal: 12 }}>
         <DashboardHeader 
           subtitle="Golden Rose"
           title="Mall Delivery"
@@ -341,7 +341,7 @@ export default function HomeScreen({ navigation }: Props) {
         }
         
         contentContainerStyle={{
-          paddingHorizontal: 16,
+          paddingHorizontal: 12,
           paddingBottom: activeOrder ? 180 : 80,
           paddingTop: 10
         }}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { ShoppingBag, Plus } from 'lucide-react-native';
 
 interface ProductProps {
   name: string;
@@ -16,10 +16,11 @@ export default function ProductCard({ name, price, image_url, category, onPress,
     <TouchableOpacity 
       onPress={onPress}
       activeOpacity={0.9}
-      className="flex-1 m-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+      // 👇 PADDING (p-2) creates the whitespace around the islands
+      className="flex-1 bg-white rounded-xl border border-gray-200 p-2 shadow-sm"
     >
-      {/* Product Image */}
-      <View className="h-32 w-full bg-gray-50">
+      {/* 👇 IMAGE ISLAND (Rounded corners separate from card edge) */}
+      <View className="h-56 w-full bg-gray-50 rounded-lg overflow-hidden relative">
         <Image 
           source={{ uri: image_url || 'https://via.placeholder.com/200' }} 
           className="w-full h-full"
@@ -27,28 +28,36 @@ export default function ProductCard({ name, price, image_url, category, onPress,
         />
       </View>
 
-      {/* Details */}
-      <View className="p-3">
-        <Text numberOfLines={1} className="text-onyx font-serif text-base mb-1">
-          {name}
-        </Text>
-        <Text className="text-gray-500 text-xs mb-3">
+      {/* Details Section */}
+      <View className="mt-2 px-1">
+        {/* Category & Name */}
+        <Text className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">
           {category}
         </Text>
+        <Text numberOfLines={2} className="text-onyx font-serif text-sm font-medium mb-3 h-10 leading-tight">
+          {name}
+        </Text>
 
-        {/* Price & Add Button Row */}
-        <View className="flex-row justify-between items-center">
-          <Text className="text-gold-600 font-bold text-sm">
-            ${price.toFixed(2)}
-          </Text>
+        {/* 👇 PRICE ISLAND */}
+        <View className="bg-gray-100 rounded-lg p-1 flex-row items-center justify-between">
           
+          {/* Price (Left) */}
+          <View className="px-2">
+            <Text className="text-onyx font-bold text-sm">
+              ${price.toFixed(2)}
+            </Text>
+          </View>
+
+          {/* Add to Cart Button (Right) */}
           <TouchableOpacity 
             onPress={onAddToCart}
-            className="bg-onyx p-2 rounded-full"
+            className="bg-white px-3 py-1.5 rounded-md shadow-sm border border-gray-200 flex-row items-center gap-1 active:bg-gray-50"
           >
-            <Plus color="white" size={16} />
+            <ShoppingBag size={14} color="#1A1A1A" />
+            <Plus size={10} color="#1A1A1A" strokeWidth={4} />
           </TouchableOpacity>
         </View>
+
       </View>
     </TouchableOpacity>
   );

@@ -57,6 +57,7 @@ export const translations = {
     category_home: "Home",
     category_jewelry: "Jewelry",
     category_dining: "Dining",
+    uncategorized: "Uncategorized",
     
     // Order Status
     status_confirmed: "Confirmed",
@@ -95,6 +96,7 @@ export const translations = {
     browse: "Browse",
     marketplace: "Marketplace",
     stores: "Stores",
+    products: "Products",
     recent_searches: "Recent Searches",
     no_results_found: "No Results Found",
     try_different_keyword: "Try a different keyword.",
@@ -119,6 +121,7 @@ export const translations = {
     login_enter_credentials: "Please enter email and password.",
     guest_profile_message: "Log in to track your orders, save addresses, and access exclusive mall offers.",
     confirm_logout: "Are you sure you want to sign out?",
+    check_connection: "Please check your internet connection and try again.",
     
     // Cart
     shopping_bag: "Shopping Bag",
@@ -232,6 +235,7 @@ export const translations = {
     // Products & Stores
     luxury_collection: "Luxury Collection",
     default_product_description: "Premium quality product from our collection.",
+    default_store_description: "Upscale store offering the best products from the mall.",
     update_failed: "Update Failed",
     product_fetch_error: "Could not fetch latest product details.",
     added_to_bag: "Added to Bag",
@@ -309,6 +313,7 @@ export const translations = {
     category_home: "المنزل",
     category_jewelry: "المجوهرات",
     category_dining: "المطاعم",
+    uncategorized: "غير مصنف",
     
     // Order Status
     status_confirmed: "تم التأكيد",
@@ -347,6 +352,7 @@ export const translations = {
     browse: "تصفح",
     marketplace: "السوق",
     stores: "المتاجر",
+    products: "المنتجات",
     recent_searches: "عمليات البحث الأخيرة",
     no_results_found: "لم يتم العثور على نتائج",
     try_different_keyword: "حاول كلمة مفتاحية مختلفة.",
@@ -371,6 +377,7 @@ export const translations = {
     login_enter_credentials: "الرجاء إدخال البريد الإلكتروني وكلمة المرور.",
     guest_profile_message: "سجل الدخول لتتبع طلباتك وحفظ العناوين والوصول إلى العروض الحصرية.",
     confirm_logout: "هل أنت متأكد من تسجيل الخروج؟",
+    check_connection: "يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.",
     
     // Cart
     shopping_bag: "حقيبة التسوق",
@@ -484,6 +491,7 @@ export const translations = {
     // Products & Stores
     luxury_collection: "مجموعة فاخرة",
     default_product_description: "منتج بجودة ممتازة من مجموعتنا.",
+    default_store_description: "متجر راقٍ يقدم أفضل المنتجات من المول.",
     update_failed: "فشل التحديث",
     product_fetch_error: "تعذر جلب أحدث تفاصيل المنتج.",
     added_to_bag: "تمت الإضافة للسلة",

@@ -142,7 +142,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* HEADER */}
-      <View className="px-6" style={{ paddingHorizontal: 16 }}>
+      <View className="px-6" style={{ paddingHorizontal: 12 }}>
         <DashboardHeader 
           subtitle={t('browse')}
           title={t('marketplace')}
@@ -179,8 +179,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         }
         
         contentContainerStyle={{
-          paddingHorizontal: 0,
-          paddingBottom: 50,
+          paddingHorizontal: 12,
           backgroundColor: 'transparent'
         }}
         
