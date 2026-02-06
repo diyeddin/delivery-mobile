@@ -162,6 +162,10 @@ export default function HomeScreen({ navigation }: Props) {
       if (searchText.trim().length > 0) {
         params.q = searchText;
       }
+
+      if (activeCategory !== 'All') {
+        params.category = activeCategory;
+      }
       
       // Note: Backend doesn't support 'category' filter yet, only 'q'.
       // If you added it, pass it here: if (activeCategory !== 'All') params.category = activeCategory;
@@ -196,19 +200,39 @@ export default function HomeScreen({ navigation }: Props) {
   // Initial Load
   useEffect(() => {
     fetchUserData();
-    fetchStores(true);
+    // fetchStores(true);
   }, []);
+
+  // A. Search Effect (DEBOUNCED - 500ms delay)
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(() => {
+      fetchStores(true);
+    }, 500);
+
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [searchText]); // 👈 Only triggers on text change
+
+  // B. Category Effect (INSTANT - No delay)
+  useEffect(() => {
+    // Clear any pending search timer to prevent double-fetching
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    // Fetch immediately
+    fetchStores(true);
+  }, [activeCategory]); // 👈 Only triggers on category change
 
   // Debounced Search Listener
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
-      // Whenever search text or category changes, reset list
-      // Note: Since backend lacks category filter, this just re-searches text.
       fetchStores(true);
     }, 500);
     return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
-  }, [searchText, activeCategory]);
+  }, [searchText]);
 
   // Carousel Auto-scroll
   useEffect(() => {
@@ -230,7 +254,7 @@ export default function HomeScreen({ navigation }: Props) {
     setHasMore(true);
     fetchUserData();
     fetchStores(true); 
-  }, []);
+  }, [searchText, activeCategory]);
 
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) {
@@ -309,7 +333,7 @@ export default function HomeScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* 1. HEADER */}
-      <View className="px-4 pb-2 z-10 bg-creme">
+      <View className="px-4 pb-2 z-1 bg-creme">
         <DashboardHeader 
           subtitle="Golden Rose"
           title="Mall Delivery"

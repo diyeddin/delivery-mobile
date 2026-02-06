@@ -54,6 +54,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     { id: 'Electronics', label: t('category_tech') },
     { id: 'Food', label: t('category_food') },
     { id: 'Home', label: t('category_home') },
+    { id: 'Jewelry', label: t('category_jewelry') },
   ];
 
   // --- 1. CORE DATA FETCHING ---
@@ -79,6 +80,11 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
       // Only send 'q' if user typed something
       if (searchText.trim().length > 0) {
         params.q = searchText;
+      }
+
+      // 👇 NEW: Send Category to Backend
+      if (activeCategory !== 'All') {
+        params.category = activeCategory;
       }
 
       // API Call
@@ -111,7 +117,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   // --- 2. INITIAL LOAD & USER CHECK ---
   useEffect(() => {
     checkUserAndAddress();
-    fetchProducts(true); // Load Page 1
+    // fetchProducts(true); // Load Page 1
   }, []);
 
   const checkUserAndAddress = async () => {
@@ -133,9 +139,9 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 3. HANDLE SEARCH (DEBOUNCED) ---
+  // --- 3. HANDLE SEARCH & CATEGORY ---
   useEffect(() => {
-    // When text changes, wait 500ms before hitting server
+    // Debounce Search, but Instant Category Click
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     
     searchTimeout.current = setTimeout(() => {
@@ -147,13 +153,22 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     };
   }, [searchText]);
 
+  // --- 3.1. HANDLE CATEGORY (INSTANT) ---
+  useEffect(() => {
+    // 1. Clear any pending search timer so we don't double-fetch
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    // 2. Fetch immediately! No delay.
+    fetchProducts(true);
+  }, [activeCategory]); // 👈 Only depends on activeCategory
+
   // --- 4. HANDLE REFRESH ---
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setHasMore(true);
     checkUserAndAddress();
     fetchProducts(true);
-  }, []);
+  }, [activeCategory, searchText]);
 
   // --- 5. HANDLE LOAD MORE ---
   const handleLoadMore = () => {
@@ -162,19 +177,11 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 6. CATEGORY FILTER (CLIENT SIDE FOR NOW) ---
-  // Since we haven't updated backend for Categories yet, 
-  // we filter the *visible* list. 
-  // TODO: Add category_id to backend GET /products
-  const visibleProducts = activeCategory === 'All' 
-    ? products 
-    : products.filter(p => p.category === activeCategory);
-
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* HEADER */}
-      <View className="px-6 z-10" style={{ paddingHorizontal: 16 }}>
+      <View className="px-6 z-1" style={{ paddingHorizontal: 16 }}>
         <DashboardHeader 
           subtitle={t('browse')}
           title={t('marketplace')}
@@ -195,7 +202,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
       {/* LIST */}
       <ProductGrid
-        products={visibleProducts}
+        products={products}
         isLoading={loading}
         refreshing={refreshing}
         onRefresh={onRefresh}
