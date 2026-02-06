@@ -1,7 +1,6 @@
-// src/screens/StoreDetailsScreen.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { 
-  View, Text, Image, Animated, StatusBar, ActivityIndicator, Dimensions 
+  View, Text, Image, Animated, StatusBar, ActivityIndicator 
 } from 'react-native';
 import { MapPin, Star } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,15 +9,16 @@ import { HomeStackParamList } from '../types';
 import client from '../api/client';
 import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
-import ProductGrid from '../components/ProductGrid'; // 👈 Using the modular grid
+import ProductGrid from '../components/ProductGrid';
 import AnimatedHeader from '../components/AnimatedHeader';
+import PaginationBadge from '../components/PaginationBadge'; 
 import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetails'>;
 
 const BANNER_HEIGHT = 280;
-const SHEET_BG_COLOR = '#F5F5F0'; // The Unified Background Color
-const PAGE_SIZE = 20;
+const SHEET_BG_COLOR = '#F5F5F0';
+const PAGE_SIZE = 4;
 
 export default function StoreDetailsScreen({ route, navigation }: Props) {
   const { storeId, name } = route.params;
@@ -28,6 +28,8 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   // --- STATE ---
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0); 
+  
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -55,8 +57,15 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       const productsRes = await client.get(`/products/`, { 
         params: { store_id: storeId, limit: PAGE_SIZE, offset: 0 } 
       });
-      setProducts(productsRes.data);
-      setHasMore(productsRes.data.length >= PAGE_SIZE);
+
+      const incomingData = productsRes.data.data || productsRes.data || [];
+      const total = productsRes.data.total || 0;
+
+      setProducts(incomingData);
+      setTotalCount(total);
+      
+      // Robust Logic
+      setHasMore(incomingData.length >= PAGE_SIZE);
 
       try {
         const storeRes = await client.get(`/stores/${storeId}`);
@@ -81,10 +90,24 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       const res = await client.get(`/products/`, {
         params: { store_id: storeId, limit: PAGE_SIZE, offset: products.length }
       });
-      if (res.data.length < PAGE_SIZE) setHasMore(false);
-      setProducts(prev => [...prev, ...res.data]);
-    } catch (error) { console.error(error); } 
-    finally { setFetchingMore(false); }
+
+      const incomingData = res.data.data || res.data || [];
+      const total = res.data.total || 0;
+
+      if (incomingData.length === 0) {
+        setHasMore(false);
+      } else {
+        setProducts(prev => [...prev, ...incomingData]);
+        setTotalCount(total);
+        // Robust Logic
+        setHasMore(incomingData.length >= PAGE_SIZE);
+      }
+
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setFetchingMore(false); 
+    }
   };
 
   const onRefresh = () => {
@@ -101,10 +124,8 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   // --- HEADER ---
   const renderListHeader = (
     <View>
-      {/* 1. Spacer for Banner */}
       <View style={{ height: BANNER_HEIGHT, backgroundColor: 'transparent' }} />
       
-      {/* 2. Store Info (Starts the Solid Sheet) */}
       <View 
         className="-mt-6 rounded-t-3xl pt-2 pb-0 px-6 shadow-sm"
         style={{ backgroundColor: SHEET_BG_COLOR }}
@@ -152,8 +173,6 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
             <Text className="text-lg font-serif font-bold text-onyx">{t('products')}</Text>
         </View>
 
-        {/* 👇 THE SEAM SEALER: This 2px view overlaps the list start by 1px
-            This prevents the sub-pixel "flickering line" between header and grid. */}
         <View style={{ height: 2, marginBottom: -1, backgroundColor: SHEET_BG_COLOR }} />
       </View>
     </View>
@@ -172,7 +191,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
     <View className="flex-1 bg-black">
       <StatusBar barStyle="light-content" />
 
-      {/* Layer 0: Parallax Banner */}
+      {/* Parallax Banner */}
       <Animated.View style={{ 
         position: 'absolute', top: 0, left: 0, right: 0, 
         height: BANNER_HEIGHT + 50, 
@@ -188,7 +207,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         <View className="absolute inset-0 bg-black/40" /> 
       </Animated.View>
 
-      {/* Layer 1: Sticky Header */}
+      {/* Sticky Header */}
       <AnimatedHeader
         title={displayStoreName}
         scrollY={scrollY}
@@ -197,25 +216,21 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         backgroundColor={SHEET_BG_COLOR}
       />
 
-      {/* Layer 2: Modular Product Grid */}
+      {/* Product Grid */}
       <ProductGrid 
         products={products}
         isLoading={false}
-        
         ListHeaderComponent={renderListHeader}
-        
-        // 👇 CONFIG FOR SOLID SHEET MODE
-        useSolidRowLayout={true} // Enables padding-based spacing
-        itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR}} // Fills gaps with sheet color
-        columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }} // Row background
+        useSolidRowLayout={true} 
+        itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR}} 
+        columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }} 
         
         contentContainerStyle={{ 
             paddingBottom: 0,
-            paddingHorizontal: 0, // Reset horizontal since columnWrapper handles it
-            backgroundColor: 'transparent' // Transparent to see Banner at top
+            paddingHorizontal: 0, 
+            backgroundColor: 'transparent'
         }}
         
-        // Pass the scroll animation
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
           { useNativeDriver: true }
@@ -248,6 +263,12 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
           addToCart({ id: item.id, name: item.name, price: item.price, image_url: item.image_url });
           Toast.show({ type: 'success', text1: t('added_to_bag'), text2: item.name });
         }}
+      />
+
+      <PaginationBadge 
+        currentCount={products.length} 
+        totalCount={totalCount} 
+        visible={!loading && products.length > 0} 
       />
     </View>
   );

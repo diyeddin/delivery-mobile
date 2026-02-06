@@ -13,7 +13,7 @@ import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 4;
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }

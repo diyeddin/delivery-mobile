@@ -53,8 +53,8 @@ export default function ProductCard({ name, price, image_url, category, onPress,
             onPress={onAddToCart}
             className="bg-white px-3 py-1.5 rounded-md shadow-sm border border-gray-200 flex-row items-center gap-1 active:bg-gray-50"
           >
-            <ShoppingBag size={14} color="#1A1A1A" />
             <Plus size={10} color="#1A1A1A" strokeWidth={4} />
+            <ShoppingBag size={14} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
 

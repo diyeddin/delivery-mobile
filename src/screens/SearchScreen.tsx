@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, Keyboard, FlatList, Image, 
   ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, X, Clock, Search, ChevronRight, ArrowUpLeft } from 'lucide-react-native';
+import { ArrowLeft, X, Clock, Search, ArrowUpLeft } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import client from '../api/client';
 import ProductGrid from '../components/ProductGrid';
@@ -21,7 +21,7 @@ const HISTORY_KEY = 'search_history';
 
 export default function SearchScreen({ navigation, route }: Props) {
   const { type } = route.params; 
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { addToCart } = useCart();
   
   // --- STATE ---
@@ -29,8 +29,8 @@ export default function SearchScreen({ navigation, route }: Props) {
   const [mode, setMode] = useState<'history' | 'suggestions' | 'results'>('history');
   
   const [history, setHistory] = useState<string[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]); // List View Data
-  const [results, setResults] = useState<any[]>([]);       // Grid View Data
+  const [suggestions, setSuggestions] = useState<any[]>([]); 
+  const [results, setResults] = useState<any[]>([]);       
   
   const [loading, setLoading] = useState(false);
   
@@ -40,6 +40,7 @@ export default function SearchScreen({ navigation, route }: Props) {
   // --- 1. SETUP ---
   useEffect(() => {
     loadHistory();
+    // Tiny delay to ensure screen is ready before focusing keyboard
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
@@ -70,11 +71,14 @@ export default function SearchScreen({ navigation, route }: Props) {
     if (!text.trim()) return;
     try {
       const endpoint = type === 'store' ? '/stores/' : '/products/';
-      // Limit to 6 items for suggestions, they are just previews
       const res = await client.get(endpoint, {
         params: { q: text, limit: 6 } 
       });
-      setSuggestions(res.data);
+      
+      // 👇 FIX 1: Handle New Backend Response Format
+      const data = res.data.data || res.data || [];
+      setSuggestions(data);
+
     } catch (error) {
       console.error("Suggestion error:", error);
     }
@@ -86,17 +90,20 @@ export default function SearchScreen({ navigation, route }: Props) {
     if (!term) return;
 
     Keyboard.dismiss();
-    setMode('results'); // Switch to Grid View
+    setMode('results');
     setLoading(true);
     saveToHistory(term);
 
     try {
       const endpoint = type === 'store' ? '/stores/' : '/products/';
-      // Fetch more items for the grid
       const res = await client.get(endpoint, {
         params: { q: term, limit: 50 } 
       });
-      setResults(res.data);
+      
+      // 👇 FIX 2: Handle New Backend Response Format
+      const data = res.data.data || res.data || [];
+      setResults(data);
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -108,17 +115,14 @@ export default function SearchScreen({ navigation, route }: Props) {
   const handleTextChange = (text: string) => {
     setQuery(text);
 
-    // 1. If empty, show history
     if (text.length === 0) {
       setMode('history');
       setSuggestions([]);
       return;
     }
 
-    // 2. If typing, switch to suggestions mode
     if (mode !== 'suggestions') setMode('suggestions');
 
-    // 3. Debounce the suggestion fetch (300ms)
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(text);
@@ -134,13 +138,10 @@ export default function SearchScreen({ navigation, route }: Props) {
   };
 
   // --- 4. SUB-COMPONENTS ---
-
-  // A. Suggestion Row (The "List" View)
   const renderSuggestionRow = ({ item }: { item: any }) => (
     <TouchableOpacity 
       className="flex-row items-center py-3 border-b border-gray-50 px-4 active:bg-gray-50"
       onPress={() => {
-        // Clicking a suggestion goes straight to details
         if (type === 'store') {
             navigation.navigate('StoreDetails', { storeId: item.id, name: item.name });
         } else {
@@ -151,7 +152,6 @@ export default function SearchScreen({ navigation, route }: Props) {
         }
       }}
     >
-      {/* Thumbnail */}
       <View className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden border border-gray-100">
         {item.image_url ? (
            <Image source={{ uri: item.image_url }} className="w-full h-full" resizeMode="cover" />
@@ -162,13 +162,11 @@ export default function SearchScreen({ navigation, route }: Props) {
         )}
       </View>
 
-      {/* Text Info */}
       <View className="flex-1 ms-3 justify-center">
          <Text className="text-sm text-onyx font-medium" numberOfLines={1}>{item.name}</Text>
          <Text className="text-xs text-gray-400" numberOfLines={1}>{item.category}</Text>
       </View>
 
-      {/* Auto-fill Icon (Optional UX: Click arrow to fill text but not search yet) */}
       <TouchableOpacity 
         className="p-2"
         onPress={() => {
@@ -176,7 +174,7 @@ export default function SearchScreen({ navigation, route }: Props) {
            performFullSearch(item.name);
         }}
       >
-         <ArrowUpLeft size={16} color="#D1D5DB" />
+         <ArrowUpLeft size={16} color="#D1D5DB" style={{ transform: [{ rotateY: isRTL ? '180deg' : '0deg' }] }} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -218,12 +216,11 @@ export default function SearchScreen({ navigation, route }: Props) {
       );
     }
 
-    // MODE 2: SUGGESTIONS (List View while typing)
+    // MODE 2: SUGGESTIONS
     if (mode === 'suggestions') {
         return (
             <View className="flex-1">
                 {suggestions.length === 0 ? (
-                     // Loading skeleton or silent
                      <View className="pt-10 items-center">
                         <ActivityIndicator size="small" color="#D4AF37" />
                      </View>
@@ -239,7 +236,7 @@ export default function SearchScreen({ navigation, route }: Props) {
         );
     }
 
-    // MODE 3: RESULTS (Grid View after Enter)
+    // MODE 3: RESULTS
     if (mode === 'results') {
         if (loading) {
             return <View className="pt-20"><ActivityIndicator size="large" color="#D4AF37" /></View>;
@@ -260,7 +257,8 @@ export default function SearchScreen({ navigation, route }: Props) {
                   stores={results} 
                   isLoading={false} 
                   onStorePress={(store) => navigation.navigate('StoreDetails', { storeId: store.id, name: store.name })}
-                  contentContainerStyle={{ padding: 16, paddingTop: 16 }} 
+                  // 👇 FIX 3: Match spacing to Marketplace
+                  contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 50 }} 
                 />
             );
         } else {
@@ -268,7 +266,15 @@ export default function SearchScreen({ navigation, route }: Props) {
                 <ProductGrid 
                   products={results} 
                   isLoading={false} 
-                  contentContainerStyle={{ padding: 16, paddingTop: 16, backgroundColor: 'transparent' }} 
+                  // 👇 FIX 4: Match spacing to Marketplace
+                  contentContainerStyle={{ 
+                    paddingHorizontal: 24, 
+                    paddingTop: 24, 
+                    paddingBottom: 50,
+                    backgroundColor: 'transparent' 
+                  }} 
+                  columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
+                  
                   onProductPress={(item) => navigation.navigate('ProductDetails', { 
                     productId: item.id, name: item.name, price: item.price, 
                     image_url: item.image_url, description: item.description, category: item.category 
@@ -291,7 +297,7 @@ export default function SearchScreen({ navigation, route }: Props) {
           onPress={() => navigation.goBack()} 
           className="w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-100 shadow-sm"
         >
-          <ArrowLeft size={20} color="#1F2937" />
+          <ArrowLeft size={20} color="#1F2937" style={{ transform: [{ rotateY: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         
         <View className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import ProductGrid from '../components/ProductGrid';
 import * as SecureStore from 'expo-secure-store';
+import PaginationBadge from '../components/PaginationBadge';
 
 interface Product {
   id: number;
@@ -18,22 +19,26 @@ interface Product {
   description: string;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 4; // Testing with 4
 
 export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   const { t } = useLanguage();
   
   // --- STATE ---
   const [products, setProducts] = useState<Product[]>([]);
+  // Ref to track the *currently displayed* count for offset
+  const productsLengthRef = useRef(0); 
+  // Ref to track the *current category* to prevent race conditions
+  const activeCategoryRef = useRef('All');
+
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Filters (Search Removed)
   const [activeCategory, setActiveCategory] = useState('All');
   const [hasMore, setHasMore] = useState(true);
   
-  // Address & User
   const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
   const [addressLine, setAddressLine] = useState<string>(t('select_location'));
   const [isGuest, setIsGuest] = useState(true);
@@ -51,8 +56,12 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
   // --- 1. CORE DATA FETCHING ---
   const fetchProducts = async (isReset: boolean = false) => {
-    const currentOffset = isReset ? 0 : products.length;
+    // If resetting, offset is 0. Otherwise, use the current REF length.
+    const currentOffset = isReset ? 0 : productsLengthRef.current;
     
+    // Capture the category we are fetching for at the START of the request
+    const targetCategory = activeCategoryRef.current;
+
     if (!isReset && (!hasMore || fetchingMore)) return;
 
     if (isReset) setLoading(true);
@@ -64,20 +73,35 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         offset: currentOffset,
       };
 
-      // Only Category Logic Remains
-      if (activeCategory !== 'All') {
-        params.category = activeCategory;
+      if (targetCategory !== 'All') {
+        params.category = targetCategory;
       }
 
       const res = await client.get('/products/', { params });
-      const newItems = res.data;
+      
+      // 🛡️ RACE CONDITION GUARD 🛡️
+      // If the category changed while we were waiting for the network, discard this result.
+      if (activeCategoryRef.current !== targetCategory) {
+        return; 
+      }
+
+      const newItems = res.data.data || res.data || [];
+      const total = res.data.total || 0;
 
       if (isReset) {
         setProducts(newItems);
+        productsLengthRef.current = newItems.length; // Sync Ref
       } else {
-        setProducts(prev => [...prev, ...newItems]);
+        setProducts(prev => {
+          const updated = [...prev, ...newItems];
+          productsLengthRef.current = updated.length; // Sync Ref
+          return updated;
+        });
       }
 
+      setTotalCount(total);
+
+      // Stop if we got fewer items than requested (End of list)
       if (newItems.length < PAGE_SIZE) {
         setHasMore(false);
       } else {
@@ -87,16 +111,19 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
-      setLoading(false);
-      setFetchingMore(false);
-      setRefreshing(false);
+      // Only turn off loading if we are still on the same category
+      if (activeCategoryRef.current === targetCategory) {
+        setLoading(false);
+        setFetchingMore(false);
+        setRefreshing(false);
+      }
     }
   };
 
   // --- 2. INITIAL LOAD ---
   useEffect(() => {
     checkUserAndAddress();
-    // fetchProducts(true) is handled by category effect
+    fetchProducts(true);
   }, []);
 
   const checkUserAndAddress = async () => {
@@ -118,11 +145,25 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 3. HANDLE CATEGORY (INSTANT) ---
-  useEffect(() => {
-    fetchProducts(true);
-  }, [activeCategory]);
+  // --- 3. HANDLE CATEGORY CHANGE ---
+  // This is where the magic happens. We reset everything INSTANTLY.
+  const handleCategoryPress = (categoryId: string) => {
+    if (categoryId === activeCategory) return;
 
+    // 1. Update State & Ref
+    setActiveCategory(categoryId);
+    activeCategoryRef.current = categoryId;
+
+    // 2. WIPE DATA IMMEDIATELY (Prevents "Stuck" old data)
+    setProducts([]);
+    productsLengthRef.current = 0;
+    setTotalCount(0);
+    setHasMore(true);
+    setLoading(true);
+
+    // 3. Trigger Fetch
+    fetchProducts(true);
+  };
 
   // --- 4. HANDLERS ---
   const onRefresh = useCallback(() => {
@@ -130,7 +171,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     setHasMore(true);
     checkUserAndAddress();
     fetchProducts(true);
-  }, [activeCategory]);
+  }, []); // Removed dependency on activeCategory, uses Ref inside
 
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) {
@@ -141,7 +182,6 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
-      {/* HEADER */}
       <View className="px-6" style={{ paddingHorizontal: 12 }}>
         <DashboardHeader 
           subtitle={t('browse')}
@@ -150,18 +190,16 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           addressLine={addressLine}
           isGuest={isGuest}
           onAddressPress={() => navigation.navigate('Addresses')}
-
-          // 👇 Simplified Search Trigger
           searchPlaceholder={t('search_products')}
           onSearchPress={() => navigation.navigate('Search', { type: 'product' })}
-
           categories={CATEGORIES}
           activeCategory={activeCategory}
-          onCategoryPress={setActiveCategory}
+          
+          // 👇 Use our smart handler instead of setting state directly
+          onCategoryPress={handleCategoryPress}
         />
       </View>
 
-      {/* LIST */}
       <ProductGrid
         products={products}
         isLoading={loading}
@@ -179,7 +217,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         }
         
         contentContainerStyle={{
-          paddingHorizontal: 12,
+          paddingHorizontal: 12, // Restored 12px
           backgroundColor: 'transparent'
         }}
         
@@ -205,6 +243,12 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
             text2: item.name
           });
         }}
+      />
+
+      <PaginationBadge 
+        currentCount={products.length} 
+        totalCount={totalCount} 
+        visible={!loading && products.length > 0} 
       />
     </SafeAreaView>
   );
