@@ -9,6 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import ProductGrid from '../components/ProductGrid';
 import * as SecureStore from 'expo-secure-store';
 import PaginationBadge from '../components/PaginationBadge';
+import FilterModal from '../components/FilterModal'; // 👈 Import Filter Modal
 
 interface Product {
   id: number;
@@ -26,19 +27,30 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   
   // --- STATE ---
   const [products, setProducts] = useState<Product[]>([]);
-  // Ref to track the *currently displayed* count for offset
+  
+  // --- REFS (For Robust Fetching) ---
   const productsLengthRef = useRef(0); 
-  // Ref to track the *current category* to prevent race conditions
   const activeCategoryRef = useRef('All');
+  // 👇 New Refs for Filters (prevents stale state in async fetch)
+  const activeSortRef = useRef('newest');
+  const activeMinPriceRef = useRef<number | undefined>(undefined);
+  const activeMaxPriceRef = useRef<number | undefined>(undefined);
 
+  // --- UI STATE ---
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Category UI State
   const [activeCategory, setActiveCategory] = useState('All');
   const [hasMore, setHasMore] = useState(true);
-  
+
+  // Filter UI State
+  const [isFilterVisible, setFilterVisible] = useState(false);
+  const [activeSort, setActiveSort] = useState('newest');
+
+  // Address & User
   const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
   const [addressLine, setAddressLine] = useState<string>(t('select_location'));
   const [isGuest, setIsGuest] = useState(true);
@@ -56,11 +68,13 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
   // --- 1. CORE DATA FETCHING ---
   const fetchProducts = async (isReset: boolean = false) => {
-    // If resetting, offset is 0. Otherwise, use the current REF length.
     const currentOffset = isReset ? 0 : productsLengthRef.current;
     
-    // Capture the category we are fetching for at the START of the request
+    // Capture ALL current filters/categories at the START of the request
     const targetCategory = activeCategoryRef.current;
+    const targetSort = activeSortRef.current;
+    const targetMin = activeMinPriceRef.current;
+    const targetMax = activeMaxPriceRef.current;
 
     if (!isReset && (!hasMore || fetchingMore)) return;
 
@@ -71,17 +85,21 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
       const params: any = {
         limit: PAGE_SIZE,
         offset: currentOffset,
+        sort_by: targetSort, // 👇 Send Sort Param
       };
 
-      if (targetCategory !== 'All') {
-        params.category = targetCategory;
-      }
+      if (targetCategory !== 'All') params.category = targetCategory;
+      if (targetMin !== undefined) params.min_price = targetMin; // 👇 Send Min Price
+      if (targetMax !== undefined) params.max_price = targetMax; // 👇 Send Max Price
 
       const res = await client.get('/products/', { params });
       
       // 🛡️ RACE CONDITION GUARD 🛡️
-      // If the category changed while we were waiting for the network, discard this result.
-      if (activeCategoryRef.current !== targetCategory) {
+      // If category OR filters changed while waiting, discard.
+      if (
+        activeCategoryRef.current !== targetCategory || 
+        activeSortRef.current !== targetSort
+      ) {
         return; 
       }
 
@@ -90,18 +108,18 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
 
       if (isReset) {
         setProducts(newItems);
-        productsLengthRef.current = newItems.length; // Sync Ref
+        productsLengthRef.current = newItems.length;
       } else {
         setProducts(prev => {
           const updated = [...prev, ...newItems];
-          productsLengthRef.current = updated.length; // Sync Ref
+          productsLengthRef.current = updated.length;
           return updated;
         });
       }
 
       setTotalCount(total);
 
-      // Stop if we got fewer items than requested (End of list)
+      // Stop if we got fewer items than requested
       if (newItems.length < PAGE_SIZE) {
         setHasMore(false);
       } else {
@@ -111,7 +129,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
-      // Only turn off loading if we are still on the same category
+      // Only turn off loading if we are still on the same request context
       if (activeCategoryRef.current === targetCategory) {
         setLoading(false);
         setFetchingMore(false);
@@ -145,33 +163,52 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // --- 3. HANDLE CATEGORY CHANGE ---
-  // This is where the magic happens. We reset everything INSTANTLY.
+  // --- 3. HANDLERS ---
+  
+  // Category Change
   const handleCategoryPress = (categoryId: string) => {
     if (categoryId === activeCategory) return;
 
-    // 1. Update State & Ref
+    // Update UI & Ref
     setActiveCategory(categoryId);
     activeCategoryRef.current = categoryId;
 
-    // 2. WIPE DATA IMMEDIATELY (Prevents "Stuck" old data)
+    // Reset Data
     setProducts([]);
     productsLengthRef.current = 0;
     setTotalCount(0);
     setHasMore(true);
     setLoading(true);
 
-    // 3. Trigger Fetch
     fetchProducts(true);
   };
 
-  // --- 4. HANDLERS ---
+  // Filter Apply
+  const handleFilterApply = (min: number | undefined, max: number | undefined, sort: string) => {
+    // 1. Update UI State (for Modal)
+    setActiveSort(sort);
+    
+    // 2. Update Refs (for Fetching)
+    activeSortRef.current = sort;
+    activeMinPriceRef.current = min;
+    activeMaxPriceRef.current = max;
+
+    // 3. Reset Data & Fetch
+    setProducts([]);
+    productsLengthRef.current = 0;
+    setTotalCount(0);
+    setHasMore(true);
+    setLoading(true);
+
+    fetchProducts(true);
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setHasMore(true);
     checkUserAndAddress();
     fetchProducts(true);
-  }, []); // Removed dependency on activeCategory, uses Ref inside
+  }, []);
 
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) {
@@ -195,8 +232,9 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           categories={CATEGORIES}
           activeCategory={activeCategory}
           
-          // 👇 Use our smart handler instead of setting state directly
           onCategoryPress={handleCategoryPress}
+          // 👇 Open Filter Modal
+          onFilterPress={() => setFilterVisible(true)}
         />
       </View>
 
@@ -217,7 +255,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         }
         
         contentContainerStyle={{
-          paddingHorizontal: 12, // Restored 12px
+          paddingHorizontal: 12, 
           backgroundColor: 'transparent'
         }}
         
@@ -249,6 +287,14 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         currentCount={products.length} 
         totalCount={totalCount} 
         visible={!loading && products.length > 0} 
+      />
+
+      {/* 👇 Filter Modal */}
+      <FilterModal 
+        visible={isFilterVisible}
+        onClose={() => setFilterVisible(false)}
+        onApply={handleFilterApply}
+        currentSort={activeSort}
       />
     </SafeAreaView>
   );

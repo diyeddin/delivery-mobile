@@ -34,7 +34,17 @@ export const translations = {
     addToCart: "Add to Cart",
     checkout: "Checkout",
     clear: "Clear",
+    sort_newest: "Newest",
+    sort_price_low: "Price: Low to High",
+    sort_price_high: "Price: High to Low",
+    price_range: "Price Range",
+    price_all: "All",
+    filters: "Filters",
+    sort_by: "Sort by",
+    apply_filters: "Apply Filters",
     
+    
+
     // Profile
     language: "Language",
     changeLanguage: "Change Language",
@@ -290,6 +300,15 @@ export const translations = {
     addToCart: "إضافة للسلة",
     checkout: "إتمام الشراء",
     clear: "مسح",
+    sort_newest: "الأحدث",
+    sort_price_low: "السعر: من الأقل إلى الأعلى",
+    sort_price_high: "السعر: من الأعلى إلى الأقل",
+    price_range: "نطاق السعر",
+    price_all: "الكل",
+    filters: "الفلاتر",
+    sort_by: "ترتيب حسب",
+    apply_filters: "تطبيق الفلاتر",
+
     
     // Profile
     language: "اللغة",

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Search, MapPin, ChevronDown } from 'lucide-react-native';
+import { Search, MapPin, ChevronDown, SlidersHorizontal } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -13,19 +13,18 @@ interface DashboardHeaderProps {
   addressLine: string;
   onAddressPress: () => void;
   isGuest?: boolean;
-  
-  // 👇 Replaced "searchText/onChange" with simple "onSearchPress"
   onSearchPress: () => void; 
   searchPlaceholder: string;
-
   categories: Category[];
   activeCategory: string;
   onCategoryPress: (id: string) => void;
+  onFilterPress?: () => void;
 }
 
 export default function DashboardHeader({
   subtitle, title, addressLabel, addressLine, onAddressPress, isGuest = false,
-  onSearchPress, searchPlaceholder, categories, activeCategory, onCategoryPress,
+  onSearchPress, searchPlaceholder, categories, activeCategory, onCategoryPress, onFilterPress,
+
 }: DashboardHeaderProps) {
   const { t } = useLanguage();
 
@@ -33,10 +32,8 @@ export default function DashboardHeader({
     <View className="pt-3">
       {/* TOP ROW: Search + Address */}
       <View className="flex-row items-center mb-2 gap-1">
-        
-        {/* PILL 1: FAKE SEARCH BAR (Clickable) */}
         <TouchableOpacity 
-          onPress={onSearchPress} // 👈 Navigates to new screen
+          onPress={onSearchPress}
           activeOpacity={0.9}
           className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100"
         >
@@ -46,7 +43,6 @@ export default function DashboardHeader({
           </Text>
         </TouchableOpacity>
         
-        {/* PILL 2: ADDRESS */}
         <TouchableOpacity 
           onPress={isGuest ? () => Toast.show({type: 'info', text1: t('login_required')}) : onAddressPress} 
           activeOpacity={0.7} 
@@ -60,24 +56,42 @@ export default function DashboardHeader({
         </TouchableOpacity>
       </View>
 
-      {/* CATEGORIES */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            onPress={() => onCategoryPress(cat.id)}
-            className={`me-1 px-4 py-1.5 rounded-full border ${
-              activeCategory === cat.id ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
-            }`}
-          >
-            <Text className={`text-xs px-1 font-bold tracking-wide ${
-              activeCategory === cat.id ? 'text-gold-400' : 'text-gray-500'
-            }`}>
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* 👇 FILTER & CATEGORIES ROW */}
+      <View className="flex-row items-center mt-3 pb-2">  
+        
+        {/* Filter Button: Updated to match Pill Height & Shape */}
+        <TouchableOpacity 
+          onPress={onFilterPress}
+          className="bg-white border border-gray-200 p-2 rounded-full me-2 shadow-sm active:bg-gray-50 items-center justify-center"
+          style={{ width: 34, height: 34 }} // Force square aspect ratio if needed, or rely on padding
+        >
+          <SlidersHorizontal size={14} color="#1F2937" />
+        </TouchableOpacity>
+
+        {/* Categories: Added flex-1 to occupy remaining space properly */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          className="flex-1"
+          contentContainerStyle={{ paddingRight: 10, alignItems: 'center' }} // Center items vertically inside scroll
+        >
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              onPress={() => onCategoryPress(cat.id)}
+              className={`me-2 px-4 py-2 rounded-full border ${
+                activeCategory === cat.id ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text className={`text-xs font-bold tracking-wide ${
+                activeCategory === cat.id ? 'text-gold-400' : 'text-gray-500'
+              }`}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
