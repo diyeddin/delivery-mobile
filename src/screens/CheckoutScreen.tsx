@@ -8,18 +8,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { addressesApi } from '../api/addresses';
 import { ordersApi } from '../api/orders';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../types';
+import { HomeStackParamList, Address } from '../types';
 import Toast from 'react-native-toast-message';
 import * as SecureStore from 'expo-secure-store';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Checkout'>;
-
-interface Address {
-  id: number;
-  label: string;
-  address_line: string;
-  is_default: boolean;
-}
 
 export default function CheckoutScreen({ navigation }: Props) {
   const { t, isRTL } = useLanguage();

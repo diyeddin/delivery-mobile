@@ -11,15 +11,7 @@ import ProductGrid from '../components/ProductGrid';
 import * as SecureStore from 'expo-secure-store';
 import PaginationBadge from '../components/PaginationBadge';
 import FilterModal from '../components/FilterModal'; // 👈 Import Filter Modal
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image_url?: string;
-  category?: string;
-  description: string;
-}
+import { Product } from '../types';
 
 const PAGE_SIZE = 4; // Testing with 4
 

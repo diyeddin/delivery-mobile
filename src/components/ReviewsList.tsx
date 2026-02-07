@@ -2,14 +2,7 @@ import React from 'react';
 import { View, Text, Animated, ActivityIndicator } from 'react-native';
 import { User, Star } from 'lucide-react-native';
 import { useLanguage } from '../context/LanguageContext';
-
-interface Review {
-  id: number;
-  user_name: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-}
+import { Review } from '../types';
 
 interface ReviewsListProps {
   reviews: Review[];

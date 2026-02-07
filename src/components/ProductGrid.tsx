@@ -4,6 +4,7 @@ import { View, Text, Animated, RefreshControl, ActivityIndicator, Platform, View
 import { ShoppingBag } from 'lucide-react-native';
 import ProductCard from './ProductCard';
 import { useLanguage } from '../context/LanguageContext';
+import { Product } from '../types';
 
 const CREME_COLOR = '#F5F5F0'; 
 
@@ -29,15 +30,6 @@ const FadeInWrapper = ({ children, index }: { children: React.ReactNode, index: 
     </Animated.View>
   );
 };
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image_url?: string;
-  category?: string;
-  description: string;
-}
 
 interface ProductGridProps {
   products: Product[];

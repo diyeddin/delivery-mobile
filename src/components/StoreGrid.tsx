@@ -5,17 +5,7 @@ import {
 } from 'react-native';
 import StoreCard from './StoreCard'; // 👈 Imported your component
 import { useLanguage } from '../context/LanguageContext';
-
-// --- INTERFACES ---
-interface Store {
-  id: number;
-  name: string;
-  category: string;
-  image_url: string;
-  // We keep these optional in case your API returns them
-  banner_url: string; 
-  rating: number;     
-}
+import { Store } from '../types';
 
 interface StoreGridProps {
   stores: Store[];

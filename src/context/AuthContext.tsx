@@ -6,6 +6,7 @@ import { View, ActivityIndicator, Platform } from 'react-native';
 import { setupAuthInterceptor } from '../api/client';
 import Toast from 'react-native-toast-message';
 import { usersApi } from '../api/users';
+import { User } from '../types';
 
 // EXPO NOTIFICATIONS IMPORTS
 import * as Device from 'expo-device';
@@ -22,15 +23,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
-interface User {
-  email: string;
-  role: 'admin' | 'store_owner' | 'driver' | 'customer';
-  sub: string;
-  name?: string;
-  id?: number;
-  exp?: number;
-}
 
 interface AuthContextType {
   user: User | null;

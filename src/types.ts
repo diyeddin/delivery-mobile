@@ -1,4 +1,67 @@
 // src/types.ts
+
+// ─── Data Models ────────────────────────────────────
+
+export interface Store {
+  id: number;
+  name: string;
+  description?: string;
+  category: string;
+  image_url: string;
+  banner_url?: string;
+  rating: number;
+  review_count?: number;
+  address?: string;
+  phone_number?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image_url?: string;
+  category?: string;
+  description: string;
+}
+
+export interface Order {
+  id: number;
+  group_id?: string;
+  created_at: string;
+  total_price: number;
+  status: string;
+  store: { name: string; image_url?: string };
+  items: any[];
+}
+
+export interface OrderGroup {
+  groupId: string;
+  createdAt: string;
+  totalPrice: number;
+  orders: Order[];
+}
+
+export interface ActiveOrder {
+  id: number;
+  status: string;
+  total_price: number;
+  store?: { name: string };
+  items: any[];
+}
+
+export interface User {
+  email: string;
+  role: 'admin' | 'store_owner' | 'driver' | 'customer';
+  sub: string;
+  name?: string;
+  id?: number;
+  exp?: number;
+}
+
+// ─── Navigation ─────────────────────────────────────
+
 // Define the specific screens inside Profile
 export type ProfileStackParamList = {
   ProfileMain: undefined; // The menu screen
@@ -13,7 +76,7 @@ export type ProfileStackParamList = {
   Register: undefined;
 };
 
-interface Review {
+export interface Review {
   id: number;
   user_name: string;
   rating: number;

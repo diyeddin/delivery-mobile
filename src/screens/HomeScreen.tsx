@@ -11,7 +11,7 @@ import PromoCarousel from '../components/PromoCarousel';
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Truck, ChevronDown, MapPin, User } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../types';
+import { HomeStackParamList, Store, ActiveOrder } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
@@ -24,23 +24,6 @@ const PAGE_SIZE = 4; // Keeping your testing size
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }
 
-interface Store {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  image_url?: string;
-  banner_url?: string;
-  rating: number;
-}
-
-interface ActiveOrder {
-  id: number;
-  status: string;
-  total_price: number;
-  store?: { name: string };
-  items: any[];
-}
 
 export default function HomeScreen({ navigation }: Props) {
   const { t } = useLanguage();

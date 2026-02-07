@@ -5,27 +5,11 @@ import { ArrowLeft, Package, Clock, ChevronRight, Store } from 'lucide-react-nat
 import { ordersApi } from '../api/orders';
 import { useLanguage } from '../context/LanguageContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ProfileStackParamList } from '../types';
+import { ProfileStackParamList, Order, OrderGroup } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Orders'>;
 
-interface Order {
-  id: number;
-  group_id?: string;
-  created_at: string;
-  total_price: number;
-  status: string;
-  store: { name: string; image_url?: string }; 
-  items: any[];
-}
-
-interface OrderGroup {
-  groupId: string;
-  createdAt: string;
-  totalPrice: number;
-  orders: Order[];
-}
 
 export default function OrdersScreen({ navigation }: Props) {
   const { t, isRTL } = useLanguage();
