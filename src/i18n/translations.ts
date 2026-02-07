@@ -35,6 +35,7 @@ export const translations = {
     checkout: "Checkout",
     clear: "Clear",
     sort_newest: "Newest",
+    sort_rating: "Rating",
     sort_price_low: "Price: Low to High",
     sort_price_high: "Price: High to Low",
     price_range: "Price Range",
@@ -42,6 +43,15 @@ export const translations = {
     filters: "Filters",
     sort_by: "Sort by",
     apply_filters: "Apply Filters",
+    rate_your_order: "Rate Your Order",
+    how_was_experience: "How was your experience with",
+    write_review_placeholder: "Write a review...",
+    submit_review: "Submit Review",
+    review_submitted: "Review Submitted",
+    thank_you: "Thank you!",
+    no_reviews_yet: "No reviews yet. Be the first to review this product!",
+    reviews: "Reviews",
+
     
     
 
@@ -301,6 +311,7 @@ export const translations = {
     checkout: "إتمام الشراء",
     clear: "مسح",
     sort_newest: "الأحدث",
+    sort_rating: "التقييم",
     sort_price_low: "السعر: من الأقل إلى الأعلى",
     sort_price_high: "السعر: من الأعلى إلى الأقل",
     price_range: "نطاق السعر",
@@ -308,6 +319,15 @@ export const translations = {
     filters: "الفلاتر",
     sort_by: "ترتيب حسب",
     apply_filters: "تطبيق الفلاتر",
+    rate_your_order: "قيم طلبك",
+    how_was_experience: "كيف كانت تجربتك مع",
+    write_review_placeholder: "اكتب مراجعتك...",
+    submit_review: "إرسال المراجعة",
+    review_submitted: "تم إرسال المراجعة",
+    thank_you: "شكراً!",
+    no_reviews_yet: "لا توجد مراجعات بعد. كن أول من يراجع هذا المنتج!",
+    reviews: "المراجعات",
+
 
     
     // Profile

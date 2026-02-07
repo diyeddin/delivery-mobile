@@ -13,6 +13,14 @@ export type ProfileStackParamList = {
   Register: undefined;
 };
 
+interface Review {
+  id: number;
+  user_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
 // 1. Add the Address Interface
 export interface Address {
   id: number;

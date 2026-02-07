@@ -7,12 +7,12 @@ interface StoreProps {
   id: number;
   name: string;
   category: string;
-  image_url?: string;
-  rating?: number;
+  image_url: string;
+  rating: number;
   onPress: () => void;
 }
 
-export default function StoreCard({ name, category, image_url, rating = 4.8, onPress }: StoreProps) {
+export default function StoreCard({ name, category, image_url, rating, onPress }: StoreProps) {
   const { t } = useLanguage();
   
   return (
@@ -50,7 +50,7 @@ export default function StoreCard({ name, category, image_url, rating = 4.8, onP
           {/* Rating */}
           <View className="flex-row items-center bg-white/10 px-1.5 py-0.5 rounded">
             <Star size={10} color="#D4AF37" fill="#D4AF37" />
-            <Text className="text-gold-400 font-bold ms-1 text-[10px]">{rating}</Text>
+            <Text className="text-gold-400 font-bold ms-1 text-[10px]">{rating || 0}</Text>
           </View>
         </View>
         

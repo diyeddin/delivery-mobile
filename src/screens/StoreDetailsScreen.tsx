@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
-  View, Text, Image, Animated, StatusBar, ActivityIndicator 
+  View, Text, Image, Animated, StatusBar, ActivityIndicator, TouchableOpacity 
 } from 'react-native';
 import { MapPin, Star } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -11,7 +11,8 @@ import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
 import ProductGrid from '../components/ProductGrid';
 import AnimatedHeader from '../components/AnimatedHeader';
-import PaginationBadge from '../components/PaginationBadge'; 
+// 👇 IMPORT NEW COMPONENT
+import ReviewsList from '../components/ReviewsList';
 import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetails'>;
@@ -29,6 +30,10 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   const [store, setStore] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0); 
+  
+  const [activeTab, setActiveTab] = useState<'products' | 'reviews'>('products');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
@@ -63,8 +68,6 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
 
       setProducts(incomingData);
       setTotalCount(total);
-      
-      // Robust Logic
       setHasMore(incomingData.length >= PAGE_SIZE);
 
       try {
@@ -81,7 +84,24 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
     }
   };
 
+  const fetchReviews = async () => {
+    try {
+      // @ts-ignore
+      const data = await client.getStoreReviews(storeId);
+      setReviews(data);
+      setReviewsLoaded(true);
+    } catch (error) {
+      console.error("Reviews error", error);
+    }
+  };
+
   useEffect(() => { fetchInitialData(); }, [storeId]);
+
+  useEffect(() => {
+    if (activeTab === 'reviews' && !reviewsLoaded) {
+      fetchReviews();
+    }
+  }, [activeTab]);
 
   const fetchMoreProducts = async () => {
     if (fetchingMore || !hasMore || loading) return;
@@ -90,30 +110,22 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
       const res = await client.get(`/products/`, {
         params: { store_id: storeId, limit: PAGE_SIZE, offset: products.length }
       });
-
       const incomingData = res.data.data || res.data || [];
-      const total = res.data.total || 0;
-
       if (incomingData.length === 0) {
         setHasMore(false);
       } else {
         setProducts(prev => [...prev, ...incomingData]);
-        setTotalCount(total);
-        // Robust Logic
         setHasMore(incomingData.length >= PAGE_SIZE);
       }
-
-    } catch (error) { 
-      console.error(error); 
-    } finally { 
-      setFetchingMore(false); 
-    }
+    } catch (error) { console.error(error); } finally { setFetchingMore(false); }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
     setHasMore(true);
+    setReviewsLoaded(false); 
     fetchInitialData();
+    if (activeTab === 'reviews') fetchReviews();
   };
 
   const displayStoreName = store?.name || name; 
@@ -151,7 +163,14 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
               </View>
               <View className="flex-row items-center gap-1">
                 <Star size={12} color="#D4AF37" fill="#D4AF37" />
-                <Text className="text-xs text-green-700 font-bold">4.9</Text>
+                <Text className="text-xs text-onyx font-bold">
+                  {(store?.rating && Number(store.rating) > 0) ? Number(store.rating).toFixed(1) : "New"}
+                </Text>
+                {(store?.review_count || 0) > 0 && (
+                  <Text className="text-[10px] text-gray-400 ml-0.5">
+                    ({store?.review_count})
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -169,10 +188,26 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
              )}
         </View>
 
-        <View className="mt-8 mb-4">
-            <Text className="text-lg font-serif font-bold text-onyx">{t('products')}</Text>
-        </View>
+        {/* TABS */}
+        <View className="flex-row mt-8 mb-4 border-b border-gray-200">
+            <TouchableOpacity 
+              onPress={() => setActiveTab('products')}
+              className={`pb-3 mr-6 ${activeTab === 'products' ? 'border-b-2 border-gold-500' : ''}`}
+            >
+               <Text className={`text-lg font-serif font-bold ${activeTab === 'products' ? 'text-onyx' : 'text-gray-400'}`}>
+                 {t('products')}
+               </Text>
+            </TouchableOpacity>
 
+            <TouchableOpacity 
+              onPress={() => setActiveTab('reviews')}
+              className={`pb-3 ${activeTab === 'reviews' ? 'border-b-2 border-gold-500' : ''}`}
+            >
+               <Text className={`text-lg font-serif font-bold ${activeTab === 'reviews' ? 'text-onyx' : 'text-gray-400'}`}>
+                 {t('reviews')}
+               </Text>
+            </TouchableOpacity>
+        </View>
         <View style={{ height: 2, marginBottom: -1, backgroundColor: SHEET_BG_COLOR }} />
       </View>
     </View>
@@ -216,60 +251,66 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         backgroundColor={SHEET_BG_COLOR}
       />
 
-      {/* Product Grid */}
-      <ProductGrid 
-        products={products}
-        isLoading={false}
-        ListHeaderComponent={renderListHeader}
-        useSolidRowLayout={true} 
-        itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR}} 
-        columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }} 
-        
-        contentContainerStyle={{ 
-            paddingBottom: 0,
-            paddingHorizontal: 0, 
-            backgroundColor: 'transparent'
-        }}
-        
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
-          { useNativeDriver: true }
-        )}
-        
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        refreshOffset={insets.top + 60}
+      {/* Content Switcher */}
+      {activeTab === 'products' ? (
+        <ProductGrid 
+          products={products}
+          isLoading={false}
+          ListHeaderComponent={renderListHeader}
+          useSolidRowLayout={true} 
+          itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR }} 
+          columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }} 
+          
+          contentContainerStyle={{ 
+              paddingBottom: 0,
+              paddingHorizontal: 0, 
+              backgroundColor: 'transparent'
+          }}
+          
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
+            { useNativeDriver: true }
+          )}
+          
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          refreshOffset={insets.top + 60}
 
-        onEndReached={fetchMoreProducts}
-        onEndReachedThreshold={0.5}
-        
-        ListFooterComponent={
-            fetchingMore ? (
-               <View className="py-8 items-center" style={{ backgroundColor: SHEET_BG_COLOR }}>
-                 <ActivityIndicator color="#D4AF37" />
-               </View>
-            ) : <View style={{ height: 20, backgroundColor: SHEET_BG_COLOR }} />
-        }
-        
-        onProductPress={(item) => navigation.navigate('ProductDetails', {
-          productId: item.id, 
-          name: item.name, 
-          price: item.price, 
-          description: item.description ?? '', 
-          image_url: item.image_url,
-          category: item.category
-        })}
-        onAddToCart={(item) => {
-          addToCart({ id: item.id, name: item.name, price: item.price, image_url: item.image_url });
-          Toast.show({ type: 'success', text1: t('added_to_bag'), text2: item.name });
-        }}
-      />
-
-      <PaginationBadge 
-        currentCount={products.length} 
-        totalCount={totalCount} 
-        visible={!loading && products.length > 0} 
-      />
+          onEndReached={fetchMoreProducts}
+          onEndReachedThreshold={0.5}
+          
+          ListFooterComponent={
+              fetchingMore ? (
+                 <View className="py-8 items-center" style={{ backgroundColor: SHEET_BG_COLOR }}>
+                   <ActivityIndicator color="#D4AF37" />
+                 </View>
+              ) : <View style={{ height: 250, backgroundColor: SHEET_BG_COLOR }} />
+          }
+          
+          onProductPress={(item) => navigation.navigate('ProductDetails', {
+            productId: item.id, 
+            name: item.name, 
+            price: item.price, 
+            description: item.description ?? '', 
+            image_url: item.image_url,
+            category: item.category
+          })}
+          onAddToCart={(item) => {
+            addToCart({ id: item.id, name: item.name, price: item.price, image_url: item.image_url });
+            Toast.show({ type: 'success', text1: t('added_to_bag'), text2: item.name });
+          }}
+        />
+      ) : (
+        // 👇 USING NEW COMPONENT
+        <ReviewsList 
+          reviews={reviews}
+          ListHeaderComponent={renderListHeader}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
+            { useNativeDriver: true }
+          )}
+        />
+      )}
     </View>
   );
 }

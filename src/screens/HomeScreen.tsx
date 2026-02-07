@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, LayoutAnimation, ActivityIndicator 
 } from 'react-native';
 import client from '../api/client';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
-import PromoCarousel from '../components/PromoCarousel'; // 👈 Import the new component
+import PromoCarousel from '../components/PromoCarousel'; 
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingBag, Truck, ChevronDown, MapPin, User } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,7 +13,11 @@ import { HomeStackParamList } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
-const PAGE_SIZE = 4;
+// 👇 New Imports
+import PaginationBadge from '../components/PaginationBadge';
+import FilterModal from '../components/FilterModal';
+
+const PAGE_SIZE = 4; // Keeping your testing size
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }
@@ -42,7 +46,13 @@ export default function HomeScreen({ navigation }: Props) {
   const [stores, setStores] = useState<Store[]>([]);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   
-  // Pagination State
+  // 👇 Refs for Robust Fetching (Prevents Race Conditions)
+  const storesLengthRef = useRef(0);
+  const activeCategoryRef = useRef('All');
+  const activeSortRef = useRef('newest');
+
+  // Pagination & Filter State
+  const [totalCount, setTotalCount] = useState(0); // 👈 Track Total
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -55,7 +65,9 @@ export default function HomeScreen({ navigation }: Props) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isGuest, setIsGuest] = useState(true);
 
-  // ❌ Removed Carousel State (activeSlide, carouselRef) - Handled in Component now
+  // Filter Modal State
+  const [isFilterVisible, setFilterVisible] = useState(false);
+  const [activeSort, setActiveSort] = useState('newest');
 
   const CATEGORIES = [
     { id: 'All', label: t('category_all') },
@@ -121,46 +133,116 @@ export default function HomeScreen({ navigation }: Props) {
     }
   };
 
-  // --- 2. FETCH STORES ---
+  // --- 2. FETCH STORES (Updated Logic) ---
   const fetchStores = async (isReset: boolean = false) => {
-    const currentOffset = isReset ? 0 : stores.length;
+    const currentOffset = isReset ? 0 : storesLengthRef.current;
+    
+    // Capture state at start of request
+    const targetCategory = activeCategoryRef.current;
+    const targetSort = activeSortRef.current;
+
     if (!isReset && (!hasMore || fetchingMore)) return;
 
     if (isReset) setLoading(true);
     else setFetchingMore(true);
 
     try {
-      const params: any = { limit: PAGE_SIZE, offset: currentOffset };
-      if (activeCategory !== 'All') params.category = activeCategory;
+      const params: any = { 
+        limit: PAGE_SIZE, 
+        offset: currentOffset,
+        sort_by: targetSort // 👈 Send Sort Param
+      };
+      
+      if (targetCategory !== 'All') params.category = targetCategory;
       
       const res = await client.get('/stores/', { params });
-      const newItems = res.data;
+      
+      // 🛡️ RACE CONDITION GUARD
+      if (activeCategoryRef.current !== targetCategory || activeSortRef.current !== targetSort) {
+        return;
+      }
 
-      if (isReset) setStores(newItems);
-      else setStores(prev => [...prev, ...newItems]);
+      // Handle New Response Structure
+      const newItems = res.data.data || res.data || [];
+      const total = res.data.total || 0;
 
-      setHasMore(newItems.length >= PAGE_SIZE);
+      if (isReset) {
+        setStores(newItems);
+        storesLengthRef.current = newItems.length;
+      } else {
+        setStores(prev => {
+          const updated = [...prev, ...newItems];
+          storesLengthRef.current = updated.length;
+          return updated;
+        });
+      }
+
+      setTotalCount(total);
+
+      // Robust Stopping Logic
+      if (newItems.length < PAGE_SIZE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
     } catch (error) {
       console.error("Store fetch error:", error);
     } finally {
-      setLoading(false);
-      setFetchingMore(false);
-      setRefreshing(false);
+      if (activeCategoryRef.current === targetCategory) {
+        setLoading(false);
+        setFetchingMore(false);
+        setRefreshing(false);
+      }
     }
   };
 
-  // --- 3. EFFECTS ---
-  useEffect(() => { fetchUserData(); }, []);
+  // --- 3. INITIAL LOAD ---
+  useEffect(() => {
+    fetchUserData();
+    fetchStores(true);
+  }, []);
 
-  useEffect(() => { fetchStores(true); }, [activeCategory]);
+  // --- 4. HANDLERS ---
+  
+  // Category Change
+  const handleCategoryPress = (categoryId: string) => {
+    if (categoryId === activeCategory) return;
 
-  // --- HANDLERS ---
+    setActiveCategory(categoryId);
+    activeCategoryRef.current = categoryId;
+
+    // Reset Data
+    setStores([]);
+    storesLengthRef.current = 0;
+    setTotalCount(0);
+    setHasMore(true);
+    setLoading(true);
+
+    fetchStores(true);
+  };
+
+  // Filter Apply
+  const handleFilterApply = (_min: any, _max: any, sort: string) => {
+    setActiveSort(sort);
+    activeSortRef.current = sort;
+
+    // Reset Data
+    setStores([]);
+    storesLengthRef.current = 0;
+    setTotalCount(0);
+    setHasMore(true);
+    setLoading(true);
+
+    fetchStores(true);
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setHasMore(true);
     fetchUserData();
     fetchStores(true); 
-  }, [activeCategory]);
+  }, []);
 
   const handleLoadMore = () => {
     if (!loading && !fetchingMore && hasMore) fetchStores(false);
@@ -206,7 +288,10 @@ export default function HomeScreen({ navigation }: Props) {
           onSearchPress={() => navigation.navigate('Search', { type: 'store' })}
           categories={CATEGORIES}
           activeCategory={activeCategory}
-          onCategoryPress={setActiveCategory}
+          
+          // 👇 Use robust handler + new Filter trigger
+          onCategoryPress={handleCategoryPress}
+          onFilterPress={() => setFilterVisible(true)}
         />
       </View>
 
@@ -230,7 +315,6 @@ export default function HomeScreen({ navigation }: Props) {
 
         ListHeaderComponent={
           <View>
-             {/* 👇 NEW CAROUSEL COMPONENT */}
              <PromoCarousel /> 
              
              <View className="flex-row justify-between items-center mb-3">
@@ -238,7 +322,8 @@ export default function HomeScreen({ navigation }: Props) {
                  {activeCategory === 'All' ? t('all_shops') : `${activeCategory}`}
                </Text>
                <Text className="text-xs text-gray-400">
-                   {stores.length}+ {t('stores')}
+                   {/* Shows '20+ Stores' if exact count isn't loaded, or total if we have it */}
+                   {stores.length > 0 ? (totalCount > 0 ? totalCount : `${stores.length}+`) : 0} {t('stores')}
                </Text>
              </View>
           </View>
@@ -246,7 +331,7 @@ export default function HomeScreen({ navigation }: Props) {
         
         contentContainerStyle={{
           paddingHorizontal: 12,
-          paddingBottom: activeOrder ? 180 : 80,
+          paddingBottom: 60,
           paddingTop: 10
         }}
       />
@@ -259,7 +344,7 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={toggleWidget}
             className={`bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-black/50 ${isWidgetExpanded ? 'pb-5' : 'p-0'}`}
           >
-             {/* Widget Content (Kept exactly as it was) */}
+             {/* Widget Content */}
             <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
               <View className="flex-row items-center flex-1">
                 <View className="relative me-4">
@@ -328,6 +413,22 @@ export default function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* 4. 👇 PAGINATION BADGE
+      <PaginationBadge 
+        currentCount={stores.length} 
+        totalCount={totalCount} 
+        visible={!loading && stores.length > 0} 
+      /> */}
+
+      {/* 4. 👇 FILTER MODAL (Configured for Stores) */}
+      <FilterModal 
+        visible={isFilterVisible}
+        onClose={() => setFilterVisible(false)}
+        onApply={handleFilterApply}
+        currentSort={activeSort}
+        type="store" // Shows 'Rating' & 'A-Z' instead of Price
+      />
     </SafeAreaView>
   );
 }
