@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, MapPin, Plus, Trash2, Pencil } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList, Address } from '../types';
-import client from '../api/client';
+import { addressesApi } from '../api/addresses';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,8 +19,8 @@ export default function AddressesScreen({ navigation }: Props) {
 
   const fetchAddresses = async () => {
     try {
-      const res = await client.get('/addresses/');
-      setAddresses(res.data);
+      const data = await addressesApi.getAll();
+      setAddresses(data);
     } catch (error) {
       console.error("Failed to load addresses", error);
     } finally {
@@ -48,7 +48,7 @@ export default function AddressesScreen({ navigation }: Props) {
         style: "destructive", 
         onPress: async () => {
           try {
-            await client.delete(`/addresses/${id}`);
+            await addressesApi.remove(id);
             setAddresses(prev => prev.filter(a => a.id !== id));
             Toast.show({ type: 'success', text1: t('address_deleted') });
           } catch (err) {
@@ -65,7 +65,7 @@ export default function AddressesScreen({ navigation }: Props) {
       setAddresses(prev => prev.map(a => ({ ...a, is_default: a.id === id })));
       // Explicit Payload (ensure only ONE field is sent)
       const payload = { is_default: true };
-      await client.patch(`/addresses/${id}`, payload);
+      await addressesApi.update(id, payload);
       Toast.show({ type: 'success', text1: t('default_address_updated') });
     } catch (err) {
       Toast.show({ type: 'error', text1: t('failed_to_update') });

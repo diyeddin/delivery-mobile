@@ -6,7 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, X, Clock, Search, ArrowUpLeft } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import client from '../api/client';
+import { storesApi } from '../api/stores';
+import { productsApi } from '../api/products';
 import ProductGrid from '../components/ProductGrid';
 import StoreGrid from '../components/StoreGrid';
 import { useLanguage } from '../context/LanguageContext';
@@ -70,14 +71,14 @@ export default function SearchScreen({ navigation, route }: Props) {
   const fetchSuggestions = async (text: string) => {
     if (!text.trim()) return;
     try {
-      const endpoint = type === 'store' ? '/stores/' : '/products/';
-      const res = await client.get(endpoint, {
-        params: { q: text, limit: 6 } 
-      });
-      
+      const params = { q: text, limit: 6 };
+      const data = type === 'store'
+        ? await storesApi.getAll(params)
+        : await productsApi.getAll(params);
+
       // 👇 FIX 1: Handle New Backend Response Format
-      const data = res.data.data || res.data || [];
-      setSuggestions(data);
+      const items = data.data || data || [];
+      setSuggestions(items);
 
     } catch (error) {
       console.error("Suggestion error:", error);
@@ -95,14 +96,14 @@ export default function SearchScreen({ navigation, route }: Props) {
     saveToHistory(term);
 
     try {
-      const endpoint = type === 'store' ? '/stores/' : '/products/';
-      const res = await client.get(endpoint, {
-        params: { q: term, limit: 50 } 
-      });
-      
+      const params = { q: term, limit: 50 };
+      const data = type === 'store'
+        ? await storesApi.getAll(params)
+        : await productsApi.getAll(params);
+
       // 👇 FIX 2: Handle New Backend Response Format
-      const data = res.data.data || res.data || [];
-      setResults(data);
+      const items = data.data || data || [];
+      setResults(items);
 
     } catch (error) {
       console.error(error);

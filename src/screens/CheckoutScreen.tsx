@@ -5,7 +5,8 @@ import { ArrowLeft, MapPin, CheckCircle, Plus, Wallet, QrCode, FileText } from '
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import client from '../api/client';
+import { addressesApi } from '../api/addresses';
+import { ordersApi } from '../api/orders';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../types';
 import Toast from 'react-native-toast-message';
@@ -42,8 +43,8 @@ export default function CheckoutScreen({ navigation }: Props) {
   const fetchDefaultAddress = async () => {
     try {
       setFetchingAddress(true);
-      const res = await client.get('/addresses/default');
-      setAddress(res.data);
+      const data = await addressesApi.getDefault();
+      setAddress(data);
     } catch (error: any) {
       if (error.response?.status !== 404) {
         console.error("Failed to fetch default address", error);
@@ -84,26 +85,26 @@ export default function CheckoutScreen({ navigation }: Props) {
       }));
 
       // 2. Send API Request
-      const res = await client.post('/orders/', {
+      const data = await ordersApi.placeOrder({
         delivery_address: address.address_line,
         items: itemsPayload,
         // 👇 New Fields
-        payment_method: paymentMethod, 
+        payment_method: paymentMethod,
         note: note,
         // store_id is handled by backend grouping logic usually, but passing it doesn't hurt if schema allows
-        store_id: items[0]?.store_id 
+        store_id: items[0]?.store_id
       });
 
       // 3. Success Handling
       Toast.show({ type: 'success', text1: t('order_confirmed'), text2: t('thank_you_purchase') });
-      
+
       // Clear Cart Logic
       clearCart();
 
       // 4. Navigate to Order Details
       // IMPORTANT: The backend returns a LIST of orders (because of store grouping).
       // We grab the first one [0] to show details.
-      const newOrderId = Array.isArray(res.data) ? res.data[0].id : res.data.id;
+      const newOrderId = Array.isArray(data) ? data[0].id : data.id;
       
       navigation.replace('OrderDetails', { orderId: newOrderId });
 

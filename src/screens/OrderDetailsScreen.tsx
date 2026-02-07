@@ -9,7 +9,8 @@ import {
   ArrowLeft, Check, MapPin, ShoppingBag, Store, Clock, Truck, 
   Phone, XCircle, Star 
 } from 'lucide-react-native';
-import client from '../api/client';
+import { ordersApi } from '../api/orders';
+import { storesApi } from '../api/stores';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import * as SecureStore from 'expo-secure-store';
@@ -73,9 +74,9 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
   const fetchOrderDetails = async () => {
     try {
-      const res = await client.get(`/orders/${orderId}`);
-      setOrder(res.data);
-      // Optional: If your backend returns "is_reviewed", setHasRated(res.data.is_reviewed) here
+      const data = await ordersApi.getOrderDetails(orderId);
+      setOrder(data);
+      setHasRated(data.is_reviewed || false); // Assuming backend sends this flag to indicate if user has already reviewed the order
     } catch (error) { 
       console.error(error); 
     } finally { 
@@ -103,7 +104,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
           onPress: async () => {
             setLoading(true);
             try {
-              await client.put(`/orders/${orderId}/cancel`);
+              await ordersApi.cancelOrder(orderId);
               setOrder((prev: any) => ({ ...prev, status: 'canceled' }));
               Toast.show({ type: 'success', text1: t('order_canceled_title') });
             } catch (err: any) {
@@ -122,7 +123,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   const handleSubmitReview = async (rating: number, comment: string) => {
     try {
       // Assuming you added submitReview to client.ts
-      await client.submitReview(order.store.id, order.id, rating, comment);
+      await storesApi.submitReview(order.store.id, order.id, rating, comment);
       setHasRated(true);
       Toast.show({ type: 'success', text1: t('review_submitted'), text2: t('thank_you') });
     } catch (err: any) {

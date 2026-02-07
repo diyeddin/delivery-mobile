@@ -53,19 +53,4 @@ client.interceptors.response.use(
   }
 );
 
-// 👇 NEW: EXTEND THE CLIENT WITH CUSTOM METHODS
-// We attach this method directly to the client object so you can call client.submitReview()
-(client as any).submitReview = async (storeId: number, orderId: number, rating: number, comment: string) => {
-  return client.post(`/stores/${storeId}/review`, { rating, comment }, {
-    params: { order_id: orderId }
-  });
-};
-
-export default client as typeof client & { 
-  submitReview: (storeId: number, orderId: number, rating: number, comment: string) => Promise<any> 
-};
-
-(client as any).getStoreReviews = async (storeId: number) => {
-  const res = await client.get(`/stores/${storeId}/reviews`);
-  return res.data;
-};
+export default client;

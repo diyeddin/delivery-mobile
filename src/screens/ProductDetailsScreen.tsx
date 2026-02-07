@@ -6,7 +6,7 @@ import { ArrowLeft, ShoppingBag } from 'lucide-react-native';
 import { HomeStackParamList } from '../types';
 import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
-import client from '../api/client'; // <--- Import API Client
+import { productsApi } from '../api/products';
 import { useLanguage } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ProductDetails'>;
@@ -33,14 +33,14 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
     try {
       // Fetch fresh data from backend
       // Assumes GET /products/{id} exists
-      const res = await client.get(`/products/${productId}`);
-      
+      const data = await productsApi.getById(productId);
+
       // Update the local state with fresh data
       setProduct({
-        name: res.data.name,
-        price: res.data.price,
-        description: res.data.description,
-        image_url: res.data.image_url
+        name: data.name,
+        price: data.price,
+        description: data.description,
+        image_url: data.image_url
       });
       
       // Optional: Show a subtle toast that data updated

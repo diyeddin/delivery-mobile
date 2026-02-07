@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import client from '../api/client';
+import { authApi } from '../api/auth';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
@@ -36,16 +36,11 @@ export default function LoginScreen({ navigation }: Props) {
 
     setIsSubmitting(true);
     try {
-      // 1. Prepare Form Data
-      const body = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-
       // 2. Send Request
-      const res = await client.post('/auth/login', body, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
+      const data = await authApi.login(email, password);
 
       // 3. Login using Context
-      await login(res.data.access_token);
+      await login(data.access_token);
 
       // 4. Close Modal on Success
       if (navigation.canGoBack()) {

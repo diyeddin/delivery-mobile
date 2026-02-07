@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Clock, ChevronRight, Store } from 'lucide-react-native';
-import client from '../api/client';
+import { ordersApi } from '../api/orders';
 import { useLanguage } from '../context/LanguageContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
@@ -45,8 +45,8 @@ export default function OrdersScreen({ navigation }: Props) {
 
   const fetchOrders = async () => {
     try {
-      const res = await client.get('/orders/me/');
-      groupOrders(res.data);
+      const data = await ordersApi.getMyOrders();
+      groupOrders(data);
     } catch (error) {
       console.error("Failed to load orders", error);
     } finally {

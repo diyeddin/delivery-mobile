@@ -2,7 +2,9 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, LayoutAnimation, ActivityIndicator 
 } from 'react-native';
-import client from '../api/client';
+import { addressesApi } from '../api/addresses';
+import { ordersApi } from '../api/orders';
+import { storesApi } from '../api/stores';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
 import PromoCarousel from '../components/PromoCarousel'; 
@@ -29,6 +31,7 @@ interface Store {
   category: string;
   image_url?: string;
   banner_url?: string;
+  rating: number;
 }
 
 interface ActiveOrder {
@@ -100,17 +103,17 @@ export default function HomeScreen({ navigation }: Props) {
       setIsGuest(false);
       
       try {
-        const addrRes = await client.get('/addresses/default');
-        if (addrRes.data) {
-          setAddressLabel(addrRes.data.label || t('deliver_to'));
-          const fullAddress = addrRes.data.address_line;
+        const addrData = await addressesApi.getDefault();
+        if (addrData) {
+          setAddressLabel(addrData.label || t('deliver_to'));
+          const fullAddress = addrData.address_line;
           setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
         }
       } catch (e) { /* Ignore */ }
 
       try {
-        const orderRes = await client.get('/orders/me'); 
-        const activeList = orderRes.data.filter((o: ActiveOrder) => 
+        const orders = await ordersApi.getMyOrders();
+        const activeList = orders.filter((o: ActiveOrder) =>
           ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
         );
         const getStatusScore = (status: string) => {
@@ -155,16 +158,16 @@ export default function HomeScreen({ navigation }: Props) {
       
       if (targetCategory !== 'All') params.category = targetCategory;
       
-      const res = await client.get('/stores/', { params });
-      
+      const res = await storesApi.getAll(params);
+
       // 🛡️ RACE CONDITION GUARD
       if (activeCategoryRef.current !== targetCategory || activeSortRef.current !== targetSort) {
         return;
       }
 
       // Handle New Response Structure
-      const newItems = res.data.data || res.data || [];
-      const total = res.data.total || 0;
+      const newItems = res.data || res || [];
+      const total = res.total || 0;
 
       if (isReset) {
         setStores(newItems);

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
-import client from '../api/client';
+import { authApi } from '../api/auth';
 import { User, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types'; // Adjust if using ProfileStackParamList
@@ -46,7 +46,7 @@ export default function RegisterScreen({ navigation }: Props) {
         password: password
       };
 
-      await client.post('/auth/signup', payload);
+      await authApi.signup(payload);
 
       // 3. Success Feedback
       Toast.show({

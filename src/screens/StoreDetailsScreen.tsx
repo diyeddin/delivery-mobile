@@ -6,7 +6,8 @@ import { MapPin, Star } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeStackParamList } from '../types';
-import client from '../api/client';
+import { productsApi } from '../api/products';
+import { storesApi } from '../api/stores';
 import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
 import ProductGrid from '../components/ProductGrid';
@@ -59,20 +60,18 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   // --- DATA FETCHING ---
   const fetchInitialData = async () => {
     try {
-      const productsRes = await client.get(`/products/`, { 
-        params: { store_id: storeId, limit: PAGE_SIZE, offset: 0 } 
-      });
+      const productsRes = await productsApi.getAll({ store_id: storeId, limit: PAGE_SIZE, offset: 0 });
 
-      const incomingData = productsRes.data.data || productsRes.data || [];
-      const total = productsRes.data.total || 0;
+      const incomingData = productsRes.data || productsRes || [];
+      const total = productsRes.total || 0;
 
       setProducts(incomingData);
       setTotalCount(total);
       setHasMore(incomingData.length >= PAGE_SIZE);
 
       try {
-        const storeRes = await client.get(`/stores/${storeId}`);
-        setStore(storeRes.data);
+        const storeData = await storesApi.getById(storeId);
+        setStore(storeData);
       } catch (err) { /* Ignore */ }
 
     } catch (error) {
@@ -86,8 +85,7 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
 
   const fetchReviews = async () => {
     try {
-      // @ts-ignore
-      const data = await client.getStoreReviews(storeId);
+      const data = await storesApi.getReviews(storeId);
       setReviews(data);
       setReviewsLoaded(true);
     } catch (error) {
@@ -107,10 +105,8 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
     if (fetchingMore || !hasMore || loading) return;
     setFetchingMore(true);
     try {
-      const res = await client.get(`/products/`, {
-        params: { store_id: storeId, limit: PAGE_SIZE, offset: products.length }
-      });
-      const incomingData = res.data.data || res.data || [];
+      const res = await productsApi.getAll({ store_id: storeId, limit: PAGE_SIZE, offset: products.length });
+      const incomingData = res.data || res || [];
       if (incomingData.length === 0) {
         setHasMore(false);
       } else {

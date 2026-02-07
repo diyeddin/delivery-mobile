@@ -11,10 +11,10 @@ interface Store {
   id: number;
   name: string;
   category: string;
-  image_url?: string;
+  image_url: string;
   // We keep these optional in case your API returns them
-  banner_url?: string; 
-  rating?: number;     
+  banner_url: string; 
+  rating: number;     
 }
 
 interface StoreGridProps {

@@ -5,7 +5,7 @@ import { storage } from '../utils/storage';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { setupAuthInterceptor } from '../api/client';
 import Toast from 'react-native-toast-message';
-import client from '../api/client'; // <--- Import client to send token
+import { usersApi } from '../api/users';
 
 // EXPO NOTIFICATIONS IMPORTS
 import * as Device from 'expo-device';
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("📲 Expo Push Token:", expoToken);
 
       // 3. Send to Backend
-      await client.post('/users/me/push-token', { token: expoToken });
+      await usersApi.registerPushToken(expoToken);
       console.log("✅ Token sent to backend successfully");
 
     } catch (error) {

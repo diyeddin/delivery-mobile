@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Save, CheckCircle } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
-import client from '../api/client';
+import { addressesApi } from '../api/addresses';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -53,11 +53,11 @@ export default function AddAddressScreen({ navigation, route }: Props) {
 
       if (isEditing) {
         // --- EDIT MODE (PATCH) ---
-        await client.patch(`/addresses/${addressToEdit.id}`, payload);
+        await addressesApi.update(addressToEdit.id, payload);
         Toast.show({ type: 'success', text1: t('address_updated') });
       } else {
         // --- CREATE MODE (POST) ---
-        await client.post('/addresses/', payload);
+        await addressesApi.create(payload);
         Toast.show({ type: 'success', text1: t('address_saved') });
       }
       

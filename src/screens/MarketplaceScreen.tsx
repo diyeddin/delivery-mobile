@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import client from '../api/client';
+import { productsApi } from '../api/products';
+import { addressesApi } from '../api/addresses';
 import DashboardHeader from '../components/DashboardHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -92,19 +93,19 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
       if (targetMin !== undefined) params.min_price = targetMin; // 👇 Send Min Price
       if (targetMax !== undefined) params.max_price = targetMax; // 👇 Send Max Price
 
-      const res = await client.get('/products/', { params });
-      
+      const res = await productsApi.getAll(params);
+
       // 🛡️ RACE CONDITION GUARD 🛡️
       // If category OR filters changed while waiting, discard.
       if (
-        activeCategoryRef.current !== targetCategory || 
+        activeCategoryRef.current !== targetCategory ||
         activeSortRef.current !== targetSort
       ) {
-        return; 
+        return;
       }
 
-      const newItems = res.data.data || res.data || [];
-      const total = res.data.total || 0;
+      const newItems = res.data || res || [];
+      const total = res.total || 0;
 
       if (isReset) {
         setProducts(newItems);
@@ -149,10 +150,10 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     if (token) {
       setIsGuest(false);
       try {
-        const addrRes = await client.get('/addresses/default');
-        if (addrRes.data) {
-          setAddressLabel(addrRes.data.label || t('deliver_to'));
-          const full = addrRes.data.address_line;
+        const addrData = await addressesApi.getDefault();
+        if (addrData) {
+          setAddressLabel(addrData.label || t('deliver_to'));
+          const full = addrData.address_line;
           setAddressLine(full.length > 25 ? full.substring(0, 25) + '...' : full);
         }
       } catch (e) { /* Ignore */ }
