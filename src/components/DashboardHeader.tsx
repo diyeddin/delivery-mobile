@@ -83,7 +83,7 @@ export default function DashboardHeader({
                 activeCategory === cat.id ? 'bg-onyx border-onyx' : 'bg-white border-gray-200'
               }`}
             >
-              <Text className={`text-xs font-bold tracking-wide ${
+              <Text className={`text-xs px-1 font-bold tracking-wide ${
                 activeCategory === cat.id ? 'text-gold-400' : 'text-gray-500'
               }`}>
                 {cat.label}
