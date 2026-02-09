@@ -8,12 +8,15 @@ import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
 import { productsApi } from '../api/products';
 import { useLanguage } from '../context/LanguageContext';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ProductDetails'>;
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { addToCart } = useCart();
   const { t, isRTL } = useLanguage();
+  const { getSignal } = useAbortController();
   
   // 1. Initialize State with the navigation params (so it loads instantly)
   const { productId, name: initialName, price: initialPrice, description: initialDesc, image_url: initialImg } = route.params;
@@ -30,31 +33,19 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
   // 2. The Refresh Logic
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    const signal = getSignal();
     try {
-      // Fetch fresh data from backend
-      // Assumes GET /products/{id} exists
-      const data = await productsApi.getById(productId);
+      const data = await productsApi.getById(productId, signal);
 
-      // Update the local state with fresh data
       setProduct({
         name: data.name,
         price: data.price,
         description: data.description,
         image_url: data.image_url
       });
-      
-      // Optional: Show a subtle toast that data updated
-      // Toast.show({ type: 'success', text1: 'Updated', visibilityTime: 1000 });
 
-    } catch (error) {
-      // if (error === 'NO_INTERNET') return;
-
-      console.error("Failed to refresh product:", error);
-      Toast.show({
-        type: 'error',
-        text1: t('update_failed'),
-        text2: t('product_fetch_error')
-      });
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: t('update_failed'), fallbackMessage: t('product_fetch_error') });
     } finally {
       setRefreshing(false);
     }

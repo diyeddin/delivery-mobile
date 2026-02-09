@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { authApi } from '../api/auth';
+import { handleApiError } from '../utils/handleApiError';
 import { User, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types'; // Adjust if using ProfileStackParamList
@@ -59,9 +60,8 @@ export default function RegisterScreen({ navigation }: Props) {
       // Replace removes Register from stack so they can't go back
       navigation.replace('Login');
 
-    } catch (err: any) {
-      console.error(err);
-      const msg = err.response?.data?.detail || t('error');
+    } catch (err: unknown) {
+      const msg = handleApiError(err, { fallbackTitle: t('registration_failed'), showToast: false });
       Toast.show({
         type: 'error',
         text1: t('registration_failed'),

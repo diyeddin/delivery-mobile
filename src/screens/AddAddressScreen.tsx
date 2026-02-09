@@ -7,6 +7,7 @@ import { ProfileStackParamList } from '../types';
 import { addressesApi } from '../api/addresses';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
+import { handleApiError } from '../utils/handleApiError';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'AddAddress'>;
 
@@ -63,9 +64,8 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       
       navigation.goBack(); 
       
-    } catch (error: any) {
-      console.error("Save Error:", error.response?.data || error);
-      const msg = error.response?.data?.detail || t('failed_to_save_address');
+    } catch (error: unknown) {
+      const msg = handleApiError(error, { fallbackTitle: t('error'), fallbackMessage: t('failed_to_save_address'), showToast: false });
       Toast.show({ type: 'error', text1: t('error'), text2: msg });
     } finally {
       setLoading(false);

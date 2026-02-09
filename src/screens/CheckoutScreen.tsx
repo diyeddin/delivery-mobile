@@ -11,6 +11,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList, Address } from '../types';
 import Toast from 'react-native-toast-message';
 import * as SecureStore from 'expo-secure-store';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Checkout'>;
 
@@ -27,6 +29,8 @@ export default function CheckoutScreen({ navigation }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>('cash');
   const [note, setNote] = useState('');
 
+  const { getSignal } = useAbortController();
+
   // 1. Fetch Default Address on Load
   useEffect(() => {
     fetchDefaultAddress();
@@ -36,11 +40,13 @@ export default function CheckoutScreen({ navigation }: Props) {
   const fetchDefaultAddress = async () => {
     try {
       setFetchingAddress(true);
-      const data = await addressesApi.getDefault();
+      const signal = getSignal();
+      const data = await addressesApi.getDefault(signal);
       setAddress(data);
-    } catch (error: any) {
-      if (error.response?.status !== 404) {
-        console.error("Failed to fetch default address", error);
+    } catch (error: unknown) {
+      const axiosErr = error as { response?: { status?: number } };
+      if (axiosErr.response?.status !== 404) {
+        handleApiError(error, { showToast: false });
       }
       setAddress(null);
     } finally {
@@ -95,16 +101,21 @@ export default function CheckoutScreen({ navigation }: Props) {
       clearCart();
 
       // 4. Navigate to Order Details
-      // IMPORTANT: The backend returns a LIST of orders (because of store grouping).
+      // The backend returns a LIST of orders (because of store grouping).
       // We grab the first one [0] to show details.
-      const newOrderId = Array.isArray(data) ? data[0].id : data.id;
-      
+      const newOrderId = Array.isArray(data)
+        ? data.length > 0 ? data[0].id : null
+        : data.id;
+
+      if (!newOrderId) {
+        Toast.show({ type: 'error', text1: t('order_failed'), text2: t('checkout_failed') });
+        return;
+      }
+
       navigation.replace('OrderDetails', { orderId: newOrderId });
 
-    } catch (err: any) {
-      console.error("Checkout Error:", err);
-      const msg = err.response?.data?.detail || t('checkout_failed');
-      Toast.show({ type: 'error', text1: t('order_failed'), text2: msg });
+    } catch (err: unknown) {
+      handleApiError(err, { fallbackTitle: t('order_failed') });
     } finally {
       setLoading(false);
     }

@@ -3,8 +3,10 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { useLanguage } from '../context/LanguageContext';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '../types';
 
-export default function PrivacyScreen({ navigation }: any) {
+export default function PrivacyScreen({ navigation }: { navigation: NativeStackNavigationProp<ProfileStackParamList> }) {
   const { t, isRTL } = useLanguage();
   
   return (

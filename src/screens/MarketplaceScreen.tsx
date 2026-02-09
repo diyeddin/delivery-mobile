@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { productsApi } from '../api/products';
 import { addressesApi } from '../api/addresses';
 import DashboardHeader from '../components/DashboardHeader';
@@ -11,12 +11,16 @@ import ProductGrid from '../components/ProductGrid';
 import * as SecureStore from 'expo-secure-store';
 import PaginationBadge from '../components/PaginationBadge';
 import FilterModal from '../components/FilterModal'; // 👈 Import Filter Modal
-import { Product } from '../types';
+import { Product, HomeStackParamList } from '../types';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const PAGE_SIZE = 4; // Testing with 4
 
-export default function MarketplaceScreen({ navigation }: { navigation: any }) {
+export default function MarketplaceScreen({ navigation }: { navigation: NativeStackNavigationProp<HomeStackParamList> }) {
   const { t } = useLanguage();
+  const { getSignal } = useAbortController();
   
   // --- STATE ---
   const [products, setProducts] = useState<Product[]>([]);
@@ -62,7 +66,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   // --- 1. CORE DATA FETCHING ---
   const fetchProducts = async (isReset: boolean = false) => {
     const currentOffset = isReset ? 0 : productsLengthRef.current;
-    
+    const signal = getSignal();
+
     // Capture ALL current filters/categories at the START of the request
     const targetCategory = activeCategoryRef.current;
     const targetSort = activeSortRef.current;
@@ -75,20 +80,19 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     else setFetchingMore(true);
 
     try {
-      const params: any = {
+      const params: Record<string, string | number> = {
         limit: PAGE_SIZE,
         offset: currentOffset,
-        sort_by: targetSort, // 👇 Send Sort Param
+        sort_by: targetSort,
       };
 
       if (targetCategory !== 'All') params.category = targetCategory;
-      if (targetMin !== undefined) params.min_price = targetMin; // 👇 Send Min Price
-      if (targetMax !== undefined) params.max_price = targetMax; // 👇 Send Max Price
+      if (targetMin !== undefined) params.min_price = targetMin;
+      if (targetMax !== undefined) params.max_price = targetMax;
 
-      const res = await productsApi.getAll(params);
+      const res = await productsApi.getAll(params, signal);
 
-      // 🛡️ RACE CONDITION GUARD 🛡️
-      // If category OR filters changed while waiting, discard.
+      // RACE CONDITION GUARD
       if (
         activeCategoryRef.current !== targetCategory ||
         activeSortRef.current !== targetSort
@@ -119,8 +123,8 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
         setHasMore(true);
       }
 
-    } catch (error) {
-      console.error("Fetch error:", error);
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: 'Fetch error', showToast: false });
     } finally {
       // Only turn off loading if we are still on the same request context
       if (activeCategoryRef.current === targetCategory) {
@@ -137,18 +141,18 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     fetchProducts(true);
   }, []);
 
-  const checkUserAndAddress = async () => {
+  const checkUserAndAddress = async (signal?: AbortSignal) => {
     const token = await SecureStore.getItemAsync('token');
     if (token) {
       setIsGuest(false);
       try {
-        const addrData = await addressesApi.getDefault();
+        const addrData = await addressesApi.getDefault(signal);
         if (addrData) {
           setAddressLabel(addrData.label || t('deliver_to'));
           const full = addrData.address_line;
           setAddressLine(full.length > 25 ? full.substring(0, 25) + '...' : full);
         }
-      } catch (e) { /* Ignore */ }
+      } catch (e) { /* Ignore - address is non-critical */ }
     } else {
       setAddressLabel(t('welcome'));
       setAddressLine(t('please_login'));
@@ -212,7 +216,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
-      <View className="px-6" style={{ paddingHorizontal: 12 }}>
+      <View className="px-6" style={styles.headerWrapper}>
         <DashboardHeader 
           subtitle={t('browse')}
           title={t('marketplace')}
@@ -247,10 +251,7 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
           ) : <View className="h-20" />
         }
         
-        contentContainerStyle={{
-          paddingHorizontal: 12, 
-          backgroundColor: 'transparent'
-        }}
+        contentContainerStyle={styles.productGridContainer}
         
         onProductPress={(item) => navigation.navigate('ProductDetails', {
           productId: item.id,
@@ -292,3 +293,13 @@ export default function MarketplaceScreen({ navigation }: { navigation: any }) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  headerWrapper: {
+    paddingHorizontal: 12,
+  },
+  productGridContainer: {
+    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+  },
+});

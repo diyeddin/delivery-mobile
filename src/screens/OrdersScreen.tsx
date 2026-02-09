@@ -7,12 +7,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList, Order, OrderGroup } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Orders'>;
 
 
 export default function OrdersScreen({ navigation }: Props) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const { getSignal } = useAbortController();
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,11 +31,12 @@ export default function OrdersScreen({ navigation }: Props) {
   );
 
   const fetchOrders = async () => {
+    const signal = getSignal();
     try {
-      const data = await ordersApi.getMyOrders();
+      const data = await ordersApi.getMyOrders(signal);
       groupOrders(data);
-    } catch (error) {
-      console.error("Failed to load orders", error);
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: 'Failed to load orders', showToast: false });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,8 +72,9 @@ export default function OrdersScreen({ navigation }: Props) {
   }, []);
 
   const formatDate = (dateString: string) => {
+    const locale = language === 'ar' ? 'ar-SA' : 'en-US';
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString(locale) + ' ' + date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   };
 
   const filteredGroups = orderGroups.filter(group => {

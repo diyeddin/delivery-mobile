@@ -1,23 +1,23 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { 
-  View, Text, TouchableOpacity, LayoutAnimation, ActivityIndicator 
+import {
+  View, Text, TouchableOpacity, ActivityIndicator, StyleSheet
 } from 'react-native';
 import { addressesApi } from '../api/addresses';
 import { ordersApi } from '../api/orders';
 import { storesApi } from '../api/stores';
 import DashboardHeader from '../components/DashboardHeader';
 import StoreGrid from '../components/StoreGrid';
-import PromoCarousel from '../components/PromoCarousel'; 
+import PromoCarousel from '../components/PromoCarousel';
+import ActiveOrderWidget from '../components/ActiveOrderWidget';
 import { useLanguage } from '../context/LanguageContext';
-import { ShoppingBag, Truck, ChevronDown, MapPin, User } from 'lucide-react-native'; 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList, Store, ActiveOrder } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-
-// 👇 New Imports
 import PaginationBadge from '../components/PaginationBadge';
 import FilterModal from '../components/FilterModal';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
 
 const PAGE_SIZE = 4; // Keeping your testing size
 
@@ -27,6 +27,7 @@ interface Props { navigation: HomeScreenNavigationProp; }
 
 export default function HomeScreen({ navigation }: Props) {
   const { t } = useLanguage();
+  const { getSignal } = useAbortController();
   
   // --- STATE ---
   const [stores, setStores] = useState<Store[]>([]);
@@ -47,7 +48,6 @@ export default function HomeScreen({ navigation }: Props) {
   // UI State
   const [addressLabel, setAddressLabel] = useState<string>(t('deliver_to'));
   const [addressLine, setAddressLine] = useState<string>(t('select_location'));
-  const [isWidgetExpanded, setIsWidgetExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isGuest, setIsGuest] = useState(true);
 
@@ -64,15 +64,8 @@ export default function HomeScreen({ navigation }: Props) {
     { id: 'Home', label: t('category_home') },
   ];
 
-  const TIMELINE_STEPS = [
-    { label: t('status_confirmed'), icon: ShoppingBag },
-    { label: t('status_driver'), icon: User },
-    { label: t('status_on_way'), icon: Truck },
-    { label: t('status_arriving'), icon: MapPin },
-  ];
-
   // --- 1. FETCH USER DATA ---
-  const fetchUserData = async () => {
+  const fetchUserData = async (signal?: AbortSignal) => {
     try {
       const token = await SecureStore.getItemAsync('token');
       if (!token) {
@@ -84,18 +77,18 @@ export default function HomeScreen({ navigation }: Props) {
       }
 
       setIsGuest(false);
-      
+
       try {
-        const addrData = await addressesApi.getDefault();
+        const addrData = await addressesApi.getDefault(signal);
         if (addrData) {
           setAddressLabel(addrData.label || t('deliver_to'));
           const fullAddress = addrData.address_line;
           setAddressLine(fullAddress.length > 25 ? fullAddress.substring(0, 25) + '...' : fullAddress);
         }
-      } catch (e) { /* Ignore */ }
+      } catch (e) { /* Ignore - address is non-critical */ }
 
       try {
-        const orders = await ordersApi.getMyOrders();
+        const orders = await ordersApi.getMyOrders(signal);
         const activeList = orders.filter((o: ActiveOrder) =>
           ['pending', 'confirmed', 'assigned', 'in_transit', 'picked_up'].includes(o.status)
         );
@@ -112,17 +105,18 @@ export default function HomeScreen({ navigation }: Props) {
         } else {
             setActiveOrder(null);
         }
-      } catch (e) { /* Ignore */ }
+      } catch (e) { /* Ignore - orders widget is non-critical */ }
 
-    } catch (error) {
-      console.error("User data error:", error);
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: 'User data error', showToast: false });
     }
   };
 
   // --- 2. FETCH STORES (Updated Logic) ---
   const fetchStores = async (isReset: boolean = false) => {
     const currentOffset = isReset ? 0 : storesLengthRef.current;
-    
+    const signal = getSignal();
+
     // Capture state at start of request
     const targetCategory = activeCategoryRef.current;
     const targetSort = activeSortRef.current;
@@ -133,17 +127,17 @@ export default function HomeScreen({ navigation }: Props) {
     else setFetchingMore(true);
 
     try {
-      const params: any = { 
-        limit: PAGE_SIZE, 
+      const params: Record<string, string | number> = {
+        limit: PAGE_SIZE,
         offset: currentOffset,
-        sort_by: targetSort // 👈 Send Sort Param
+        sort_by: targetSort
       };
-      
-      if (targetCategory !== 'All') params.category = targetCategory;
-      
-      const res = await storesApi.getAll(params);
 
-      // 🛡️ RACE CONDITION GUARD
+      if (targetCategory !== 'All') params.category = targetCategory;
+
+      const res = await storesApi.getAll(params, signal);
+
+      // RACE CONDITION GUARD
       if (activeCategoryRef.current !== targetCategory || activeSortRef.current !== targetSort) {
         return;
       }
@@ -172,8 +166,8 @@ export default function HomeScreen({ navigation }: Props) {
         setHasMore(true);
       }
 
-    } catch (error) {
-      console.error("Store fetch error:", error);
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: 'Store fetch error', showToast: false });
     } finally {
       if (activeCategoryRef.current === targetCategory) {
         setLoading(false);
@@ -209,7 +203,7 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   // Filter Apply
-  const handleFilterApply = (_min: any, _max: any, sort: string) => {
+  const handleFilterApply = (_min: number | undefined, _max: number | undefined, sort: string) => {
     setActiveSort(sort);
     activeSortRef.current = sort;
 
@@ -234,35 +228,11 @@ export default function HomeScreen({ navigation }: Props) {
     if (!loading && !fetchingMore && hasMore) fetchStores(false);
   };
 
-  const toggleWidget = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsWidgetExpanded(!isWidgetExpanded);
-  };
-
-  // Helpers
-  const getStatusText = (status: string) => {
-      switch(status) {
-        case 'confirmed': return t('status_preparing');
-        case 'assigned': return t('status_driver_assigned');
-        case 'picked_up': return t('status_heading_to_you');
-        case 'in_transit': return t('status_arriving_soon');
-        case 'pending': return t('status_waiting_for_store');
-        default: return t('active_order');
-      }
-  };
-  
-  const getCurrentStepIndex = (status: string) => {
-      if (status === 'delivered') return 3;
-      if (['picked_up', 'in_transit'].includes(status)) return 2;
-      if (['assigned'].includes(status)) return 1;
-      return 0; 
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
       
       {/* 1. HEADER */}
-      <View className="px-6" style={{ paddingHorizontal: 12 }}>
+      <View className="px-6" style={styles.headerWrapper}>
         <DashboardHeader 
           subtitle="Golden Rose"
           title="Mall Delivery"
@@ -315,89 +285,15 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         }
         
-        contentContainerStyle={{
-          paddingHorizontal: 12,
-          paddingBottom: 60,
-          paddingTop: 10
-        }}
+        contentContainerStyle={styles.storeGridContainer}
       />
 
       {/* 3. ACTIVE ORDER WIDGET */}
       {activeOrder && (
-        <View className="absolute bottom-6 left-4 right-4 z-50">
-          <TouchableOpacity 
-            activeOpacity={0.95}
-            onPress={toggleWidget}
-            className={`bg-onyx rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-black/50 ${isWidgetExpanded ? 'pb-5' : 'p-0'}`}
-          >
-             {/* Widget Content */}
-            <View className="flex-row items-center justify-between p-4 bg-onyx z-20">
-              <View className="flex-row items-center flex-1">
-                <View className="relative me-4">
-                  <View className="w-10 h-10 bg-gold-500/20 rounded-full items-center justify-center animate-pulse">
-                      <View className="w-6 h-6 bg-gold-500 rounded-full items-center justify-center shadow-lg">
-                          {['in_transit', 'picked_up'].includes(activeOrder.status) ? (
-                              <Truck size={12} color="#1A1A1A" fill="#1A1A1A" />
-                          ) : (
-                              <ShoppingBag size={12} color="#1A1A1A" fill="#1A1A1A" />
-                          )}
-                      </View>
-                  </View>
-                </View>
-
-                <View>
-                  <Text className="text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                    {activeOrder.store?.name || t('active_order')}
-                  </Text>
-                  <Text className="text-white font-bold text-sm">
-                    {getStatusText(activeOrder.status)}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="bg-white/10 p-2 rounded-full ms-4">
-                <ChevronDown size={16} color="#D4AF37" style={{ transform: [{ rotate: isWidgetExpanded ? '0deg' : '180deg' }]}} />
-              </View>
-            </View>
-
-            {isWidgetExpanded && (
-              <View className="px-5 pt-2">
-                <View className="flex-row items-center justify-between mt-2 mb-6 relative">
-                  <View className="absolute top-[14px] left-4 right-4 h-[2px] bg-white/10 z-0" />
-                  <View 
-                      className="absolute top-[14px] left-4 h-[2px] bg-gold-500 z-0" 
-                      style={{ 
-                          width: `${(getCurrentStepIndex(activeOrder.status) / (TIMELINE_STEPS.length - 1)) * 90}%` 
-                      }} 
-                  />
-                  {TIMELINE_STEPS.map((step, index) => {
-                      const currentIndex = getCurrentStepIndex(activeOrder.status);
-                      const isActive = index <= currentIndex;
-                      return (
-                          <View key={index} className="items-center z-10" style={{ width: 60 }}>
-                              <View className={`w-8 h-8 rounded-full items-center justify-center border-2 mb-2 ${
-                                  isActive ? 'bg-onyx border-gold-500' : 'bg-onyx border-gray-600'
-                              }`}>
-                                  {isActive ? <step.icon size={12} color="#D4AF37" /> : <View className="w-2 h-2 rounded-full bg-gray-600" />}
-                              </View>
-                              <Text className={`text-[10px] font-bold ${isActive ? 'text-white' : 'text-gray-600'}`}>
-                                  {step.label}
-                              </Text>
-                          </View>
-                      );
-                  })}
-                </View>
-
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('OrderDetails', { orderId: activeOrder.id })} 
-                  className="w-full bg-gold-500 py-3 rounded-xl items-center shadow-lg shadow-gold-500/20 active:opacity-90"
-                >
-                  <Text className="text-onyx font-bold uppercase tracking-wider text-xs">{t('view_order_details')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+        <ActiveOrderWidget
+          activeOrder={activeOrder}
+          onViewDetails={() => navigation.navigate('OrderDetails', { orderId: activeOrder.id })}
+        />
       )}
 
       {/* 4. 👇 PAGINATION BADGE
@@ -418,3 +314,14 @@ export default function HomeScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  headerWrapper: {
+    paddingHorizontal: 12,
+  },
+  storeGridContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 60,
+    paddingTop: 10,
+  },
+});

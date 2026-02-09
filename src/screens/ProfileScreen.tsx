@@ -29,7 +29,13 @@ interface Props {
 }
 
 // Helper Row Component
-const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: any) => (
+const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: {
+  icon: React.ComponentType<{ size: number; color: string }>;
+  label: string;
+  onPress: () => void;
+  isDestructive?: boolean;
+  isRTL: boolean;
+}) => (
   <TouchableOpacity
     onPress={onPress}
     className="flex-row items-center justify-between p-4 border-b border-gray-100 bg-white"

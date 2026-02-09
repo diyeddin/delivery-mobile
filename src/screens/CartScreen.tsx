@@ -5,8 +5,9 @@ import { useCart } from '../context/CartContext';
 import { Trash2, ArrowRight, ShoppingBag, Minus, Plus } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { NavigationProp } from '@react-navigation/native';
 
-export default function CartScreen({ navigation }: any) {
+export default function CartScreen({ navigation }: { navigation: NavigationProp<Record<string, undefined>> }) {
   const { t, isRTL } = useLanguage();
   const { items, addToCart, decreaseCount, totalPrice } = useCart();
   const { user } = useAuth();

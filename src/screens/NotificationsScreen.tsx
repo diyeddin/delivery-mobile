@@ -6,8 +6,10 @@ import * as Notifications from 'expo-notifications';
 import { useAuth } from '../context/AuthContext'; // <--- Import Context
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '../types';
 
-export default function NotificationsScreen({ navigation }: any) {
+export default function NotificationsScreen({ navigation }: { navigation: NativeStackNavigationProp<ProfileStackParamList> }) {
   const { t, isRTL } = useLanguage();
   const [isEnabled, setIsEnabled] = useState(false);
   const { registerPushToken } = useAuth(); // <--- Use the function we just made

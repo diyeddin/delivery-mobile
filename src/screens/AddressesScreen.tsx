@@ -8,21 +8,25 @@ import { addressesApi } from '../api/addresses';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
+import { useAbortController } from '../hooks/useAbortController';
+import { handleApiError } from '../utils/handleApiError';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Addresses'>;
 
 export default function AddressesScreen({ navigation }: Props) {
   const { t, isRTL } = useLanguage();
+  const { getSignal } = useAbortController();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAddresses = async () => {
+    const signal = getSignal();
     try {
-      const data = await addressesApi.getAll();
+      const data = await addressesApi.getAll(signal);
       setAddresses(data);
-    } catch (error) {
-      console.error("Failed to load addresses", error);
+    } catch (error: unknown) {
+      handleApiError(error, { fallbackTitle: 'Failed to load addresses', showToast: false });
     } finally {
       setLoading(false);
       setRefreshing(false);

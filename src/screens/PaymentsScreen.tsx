@@ -5,13 +5,15 @@ import { ArrowLeft, Wallet, QrCode, CheckCircle, Info, Copy } from 'lucide-react
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '../types';
 
 // 1. Add this helper function at the top of your file (or in a utils folder)
 // \u202A = Start Left-to-Right Embedding
 // \u202C = End Formatting
 const forceLTR = (str: string) => `\u202A${str}\u202C`;
 
-export default function PaymentsScreen({ navigation }: any) {
+export default function PaymentsScreen({ navigation }: { navigation: NativeStackNavigationProp<ProfileStackParamList> }) {
   const { t, isRTL } = useLanguage();
   const [defaultMethod, setDefaultMethod] = useState<'cash' | 'transfer'>('cash');
   

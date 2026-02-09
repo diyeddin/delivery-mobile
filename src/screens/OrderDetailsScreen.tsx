@@ -1,87 +1,92 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { 
-  View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, 
-  StatusBar, Linking, Platform, Alert, Image 
+import {
+  View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl,
+  StatusBar, Linking, Platform, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { 
-  ArrowLeft, Check, MapPin, ShoppingBag, Store, Clock, Truck, 
-  Phone, XCircle, Star 
-} from 'lucide-react-native';
+import { ArrowLeft, Check, Store, Phone, XCircle, Star } from 'lucide-react-native';
 import { ordersApi } from '../api/orders';
 import { storesApi } from '../api/stores';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ProfileStackParamList } from '../types';
+import { ProfileStackParamList, OrderDetail } from '../types';
 import * as SecureStore from 'expo-secure-store';
 import { useLanguage } from '../context/LanguageContext';
 import Toast from 'react-native-toast-message';
+import { useAbortController } from '../hooks/useAbortController';
+import { useMountedRef } from '../hooks/useMountedRef';
+import { handleApiError } from '../utils/handleApiError';
+import { WS_HOST } from '../api/client';
 
-// 👇 Import the Modal
 import RateOrderModal from '../components/RateOrderModal';
+import OrderTimeline from '../components/OrderTimeline';
+import OrderReceipt from '../components/OrderReceipt';
 
-const HOST = '192.168.1.101:8000'; 
-const WS_BASE_URL = `ws://${HOST}/api/v1/orders`; 
-
-const STATUS_STEP_KEYS = [
-  { key: 'pending', labelKey: 'order_placed', descKey: 'order_placed_desc', icon: Clock },
-  { key: 'confirmed', labelKey: 'confirmed', descKey: 'status_confirmed_desc', icon: Check },
-  { key: 'assigned', labelKey: 'driver_assigned', descKey: 'driver_assigned_desc', icon: Truck },
-  { key: 'picked_up', labelKey: 'picked_up', descKey: 'picked_up_desc', icon: ShoppingBag },
-  { key: 'in_transit', labelKey: 'in_transit', descKey: 'in_transit_desc', icon: Truck },
-  { key: 'delivered', labelKey: 'delivered', descKey: 'delivered_desc', icon: MapPin },
-  { key: 'canceled', labelKey: 'canceled', descKey: 'canceled_desc', icon: XCircle },
-];
+const WS_BASE_URL = `ws://${WS_HOST}/api/v1/orders`;
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 
 export default function OrderDetailsScreen({ route, navigation }: Props) {
   const { orderId } = route.params;
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const locale = language === 'ar' ? 'ar-SA' : 'en-US';
   
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 👇 Rating State
   const [isRateVisible, setRateVisible] = useState(false);
-  const [hasRated, setHasRated] = useState(false); 
+  const [hasRated, setHasRated] = useState(false);
+
+  const { getSignal } = useAbortController();
+  const mounted = useMountedRef();
 
   useEffect(() => { fetchOrderDetails(); }, []);
 
-  // ... (WebSocket Logic kept exactly as is) ...
+  // WebSocket with mounted guard to prevent race condition
   useEffect(() => {
     let ws: WebSocket | null = null;
+    let cancelled = false;
+
     const connectWebSocket = async () => {
-        try {
-            const token = await SecureStore.getItemAsync('token');
-            if (!token) return;
-            const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
-            ws = new WebSocket(url);
-            ws.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (data.type === 'status_update') {
-                        setOrder((prev: any) => prev ? ({ ...prev, status: data.status }) : prev);
-                    }
-                } catch (err) { console.log("WS Parse Error", err); }
-            };
-        } catch (error) { console.error("WS Error:", error); }
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        if (!token || cancelled) return;
+
+        const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
+        if (cancelled) return;
+
+        ws = new WebSocket(url);
+        ws.onmessage = (e) => {
+          if (!mounted.current) return;
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'status_update') {
+              setOrder((prev) => prev ? ({ ...prev, status: data.status }) : prev);
+            }
+          } catch (_err) { /* WS parse error - non-critical */ }
+        };
+      } catch (_error) { /* WS connection error - non-critical */ }
     };
+
     connectWebSocket();
-    return () => { if (ws) ws.close(); };
+    return () => {
+      cancelled = true;
+      ws?.close();
+    };
   }, [orderId]);
 
   const fetchOrderDetails = async () => {
     try {
-      const data = await ordersApi.getOrderDetails(orderId);
+      const signal = getSignal();
+      const data = await ordersApi.getOrderDetails(orderId, signal);
       setOrder(data);
-      setHasRated(data.is_reviewed || false); // Assuming backend sends this flag to indicate if user has already reviewed the order
-    } catch (error) { 
-      console.error(error); 
-    } finally { 
-      setLoading(false); 
-      setRefreshing(false); 
+      setHasRated(data.is_reviewed || false);
+    } catch (error) {
+      handleApiError(error, { fallbackTitle: 'Order Details', showToast: false });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -105,11 +110,10 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
             setLoading(true);
             try {
               await ordersApi.cancelOrder(orderId);
-              setOrder((prev: any) => ({ ...prev, status: 'canceled' }));
+              setOrder((prev) => prev ? ({ ...prev, status: 'canceled' }) : prev);
               Toast.show({ type: 'success', text1: t('order_canceled_title') });
-            } catch (err: any) {
-              const msg = err.response?.data?.detail || t('could_not_cancel');
-              Toast.show({ type: 'error', text1: msg });
+            } catch (err: unknown) {
+              handleApiError(err, { fallbackTitle: t('could_not_cancel') });
             } finally {
               setLoading(false);
             }
@@ -122,13 +126,11 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   // 👇 Submit Review Handler
   const handleSubmitReview = async (rating: number, comment: string) => {
     try {
-      // Assuming you added submitReview to client.ts
-      await storesApi.submitReview(order.store.id, order.id, rating, comment);
+      await storesApi.submitReview(order!.store.id, order!.id, rating, comment);
       setHasRated(true);
       Toast.show({ type: 'success', text1: t('review_submitted'), text2: t('thank_you') });
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || t('error');
-      // If already reviewed, just update UI so they can't try again
+    } catch (err: unknown) {
+      const msg = handleApiError(err, { fallbackTitle: t('error'), showToast: false });
       if (msg.includes('already reviewed')) setHasRated(true);
       Toast.show({ type: 'error', text1: msg });
     }
@@ -143,7 +145,6 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   }
   if (!order) return null;
 
-  const currentStepIndex = STATUS_STEP_KEYS.findIndex(s => s.key === order.status);
   const isCanceled = order.status === 'canceled';
   const showMap = order.status !== 'delivered' && !isCanceled;
 
@@ -158,7 +159,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
           </TouchableOpacity>
           <View>
             <Text className="text-lg font-bold text-onyx font-serif">Order #{order.id}</Text>
-            <Text className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString()}</Text>
+            <Text className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString(locale)}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -217,55 +218,10 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
         )}
 
         {/* --- TIMELINE SECTION --- */}
-        <View className="bg-white mt-4 p-6 shadow-sm border-y border-gray-100">
-           {/* ... (Timeline code same as before) ... */}
-           <Text className="text-lg font-bold text-onyx font-serif mb-6">{t('order_status')}</Text>
-           <View className="ms-2">
-                {STATUS_STEP_KEYS.map((step, index) => {
-                  if (step.key === 'canceled' && !isCanceled) return null;
-                  const isActive = index <= currentStepIndex;
-                  const isLast = index === STATUS_STEP_KEYS.length - 1 || (step.key === 'delivered' && !isCanceled);
-                  return (
-                    <View key={step.key} className="flex-row">
-                      <View className="items-center me-4">
-                        <View className={`w-8 h-8 rounded-full items-center justify-center border-2 z-10 ${
-                          isActive ? 'bg-gold-500 border-gold-500' : 'bg-white border-gray-200'
-                        }`}>
-                          <step.icon size={14} color={isActive ? '#1A1A1A' : '#9CA3AF'} />
-                        </View>
-                        {!isLast && (
-                          <View className={`w-0.5 flex-1 my-1 ${isActive && index < currentStepIndex ? 'bg-gold-500' : 'bg-gray-200'}`} />
-                        )}
-                      </View>
-                      <View className={`pb-8 flex-1 ${isActive ? 'opacity-100' : 'opacity-40'}`}>
-                        <Text className="text-base font-bold text-onyx">{t(step.labelKey as any)}</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">{t(step.descKey as any)}</Text>
-                      </View>
-                    </View>
-                  );
-                })}
-           </View>
-        </View>
+        <OrderTimeline status={order.status} />
 
         {/* --- RECEIPT SECTION --- */}
-        <View className="bg-white mt-4 p-6 shadow-sm border-y border-gray-100 pb-10">
-           {/* ... (Receipt code same as before) ... */}
-           <Text className="text-lg font-bold text-onyx font-serif mb-4">{t('order_summary')}</Text>
-           {order.items?.map((item: any, idx: number) => (
-              <View key={idx} className="flex-row justify-between mb-3">
-                 <View className="flex-row gap-3 flex-1">
-                    <Text className="font-bold text-gray-500">{item.quantity}x</Text>
-                    <Text className="text-onyx flex-1 font-medium">{item.product?.name}</Text>
-                 </View>
-                 <Text className="text-gray-700 font-mono">${(item.price_at_purchase * item.quantity).toFixed(2)}</Text>
-              </View>
-           ))}
-           <View className="h-px bg-gray-100 my-4" />
-           <View className="flex-row justify-between items-center mb-6">
-              <Text className="font-bold text-gray-900 text-lg">{t('total')}</Text>
-              <Text className="font-bold text-gold-600 text-2xl font-mono">${order.total_price.toFixed(2)}</Text>
-           </View>
-        </View>
+        <OrderReceipt items={order.items} totalPrice={order.total_price} />
 
         {/* --- ACTIONS: CANCEL --- */}
         {['pending', 'confirmed'].includes(order.status) && (

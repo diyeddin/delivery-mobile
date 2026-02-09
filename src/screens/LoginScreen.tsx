@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } fro
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { authApi } from '../api/auth';
+import { handleApiError } from '../utils/handleApiError';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
@@ -49,9 +50,8 @@ export default function LoginScreen({ navigation }: Props) {
         navigation.navigate('ProfileMain');
       }
       
-    } catch (err: any) {
-      console.error(err);
-      const msg = err.response?.data?.detail || t('server_connection_error');
+    } catch (err: unknown) {
+      const msg = handleApiError(err, { fallbackTitle: t('login_failed'), fallbackMessage: t('server_connection_error'), showToast: false });
       Toast.show({
         type: 'error',
         text1: t('login_failed'),

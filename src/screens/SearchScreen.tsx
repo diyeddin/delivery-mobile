@@ -1,186 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator, Keyboard, FlatList, Image, 
-  ScrollView
+import React, { useEffect } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, FlatList,
+  ScrollView, StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, X, Clock, Search, ArrowUpLeft } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { storesApi } from '../api/stores';
-import { productsApi } from '../api/products';
+import { ArrowLeft, X, Clock, Search } from 'lucide-react-native';
 import ProductGrid from '../components/ProductGrid';
 import StoreGrid from '../components/StoreGrid';
+import SearchSuggestionRow from '../components/SearchSuggestionRow';
 import { useLanguage } from '../context/LanguageContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../types';
-import { useCart } from '../context/CartContext'; 
+import { HomeStackParamList, Store, Product } from '../types';
+import { useCart } from '../context/CartContext';
 import Toast from 'react-native-toast-message';
+import { useSearch } from '../hooks/useSearch';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Search'>;
 
-const HISTORY_KEY = 'search_history';
-
 export default function SearchScreen({ navigation, route }: Props) {
-  const { type } = route.params; 
+  const { type } = route.params;
   const { t, isRTL } = useLanguage();
   const { addToCart } = useCart();
-  
-  // --- STATE ---
-  const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'history' | 'suggestions' | 'results'>('history');
-  
-  const [history, setHistory] = useState<string[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]); 
-  const [results, setResults] = useState<any[]>([]);       
-  
-  const [loading, setLoading] = useState(false);
-  
-  const inputRef = useRef<TextInput>(null);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // --- 1. SETUP ---
+  const {
+    query, setQuery, mode, history, suggestions, results,
+    loading, inputRef,
+    loadHistory, clearHistory, performFullSearch,
+    handleTextChange, handleClear,
+  } = useSearch(type);
+
   useEffect(() => {
     loadHistory();
-    // Tiny delay to ensure screen is ready before focusing keyboard
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  const loadHistory = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(HISTORY_KEY);
-      if (stored) setHistory(JSON.parse(stored));
-    } catch (e) { console.error(e); }
-  };
-
-  const saveToHistory = async (text: string) => {
-    if (!text.trim()) return;
-    const clean = text.trim();
-    const newHistory = [clean, ...history.filter(h => h !== clean)].slice(0, 10);
-    setHistory(newHistory);
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-  };
-
-  const clearHistory = async () => {
-    setHistory([]);
-    await AsyncStorage.removeItem(HISTORY_KEY);
-  };
-
-  // --- 2. FETCHING LOGIC ---
-  
-  // A. Suggestions (While typing)
-  const fetchSuggestions = async (text: string) => {
-    if (!text.trim()) return;
-    try {
-      const params = { q: text, limit: 6 };
-      const data = type === 'store'
-        ? await storesApi.getAll(params)
-        : await productsApi.getAll(params);
-
-      // 👇 FIX 1: Handle New Backend Response Format
-      const items = data.data || data || [];
-      setSuggestions(items);
-
-    } catch (error) {
-      console.error("Suggestion error:", error);
-    }
-  };
-
-  // B. Full Results (On Enter)
-  const performFullSearch = async (text: string) => {
-    const term = text.trim();
-    if (!term) return;
-
-    Keyboard.dismiss();
-    setMode('results');
-    setLoading(true);
-    saveToHistory(term);
-
-    try {
-      const params = { q: term, limit: 50 };
-      const data = type === 'store'
-        ? await storesApi.getAll(params)
-        : await productsApi.getAll(params);
-
-      // 👇 FIX 2: Handle New Backend Response Format
-      const items = data.data || data || [];
-      setResults(items);
-
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- 3. INPUT HANDLERS ---
-  const handleTextChange = (text: string) => {
-    setQuery(text);
-
-    if (text.length === 0) {
-      setMode('history');
-      setSuggestions([]);
-      return;
-    }
-
-    if (mode !== 'suggestions') setMode('suggestions');
-
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      fetchSuggestions(text);
-    }, 300);
-  };
-
-  const handleClear = () => {
-    setQuery('');
-    setMode('history');
-    setSuggestions([]);
-    setResults([]);
-    inputRef.current?.focus();
-  };
-
-  // --- 4. SUB-COMPONENTS ---
-  const renderSuggestionRow = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      className="flex-row items-center py-3 border-b border-gray-50 px-4 active:bg-gray-50"
-      onPress={() => {
-        if (type === 'store') {
-            navigation.navigate('StoreDetails', { storeId: item.id, name: item.name });
-        } else {
-            navigation.navigate('ProductDetails', { 
-                productId: item.id, name: item.name, price: item.price, 
-                image_url: item.image_url, description: item.description, category: item.category 
-            });
-        }
-      }}
-    >
-      <View className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden border border-gray-100">
-        {item.image_url ? (
-           <Image source={{ uri: item.image_url }} className="w-full h-full" resizeMode="cover" />
-        ) : (
-           <View className="items-center justify-center flex-1">
-             <Search size={14} color="#9CA3AF" />
-           </View>
-        )}
-      </View>
-
-      <View className="flex-1 ms-3 justify-center">
-         <Text className="text-sm text-onyx font-medium" numberOfLines={1}>{item.name}</Text>
-         <Text className="text-xs text-gray-400" numberOfLines={1}>{item.category}</Text>
-      </View>
-
-      <TouchableOpacity 
-        className="p-2"
-        onPress={() => {
-           setQuery(item.name);
-           performFullSearch(item.name);
-        }}
-      >
-         <ArrowUpLeft size={16} color="#D1D5DB" style={{ transform: [{ rotateY: isRTL ? '180deg' : '0deg' }] }} />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-
-  // --- 5. RENDER CONTENT ---
+  // --- RENDER CONTENT ---
   const renderContent = () => {
     // MODE 1: HISTORY
     if (mode === 'history') {
@@ -197,13 +51,13 @@ export default function SearchScreen({ navigation, route }: Props) {
                 </TouchableOpacity>
               )}
             </View>
-            
+
             {history.length === 0 ? (
                <Text className="text-gray-300 italic text-center mt-10">{t('no_recent_searches')}</Text>
             ) : (
                history.map((term, index) => (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   onPress={() => { setQuery(term); performFullSearch(term); }}
                   className="flex-row items-center py-3.5 border-b border-gray-100"
                 >
@@ -229,7 +83,28 @@ export default function SearchScreen({ navigation, route }: Props) {
                     <FlatList
                         data={suggestions}
                         keyExtractor={(item) => item.id.toString()}
-                        renderItem={renderSuggestionRow}
+                        renderItem={({ item }) => (
+                          <SearchSuggestionRow
+                            item={item}
+                            type={type}
+                            isRTL={isRTL}
+                            onPress={() => {
+                              if (type === 'store') {
+                                navigation.navigate('StoreDetails', { storeId: item.id, name: item.name });
+                              } else {
+                                const product = item as Product;
+                                navigation.navigate('ProductDetails', {
+                                  productId: product.id, name: product.name, price: product.price,
+                                  image_url: product.image_url, description: product.description ?? '', category: product.category
+                                });
+                              }
+                            }}
+                            onFillSearch={() => {
+                              setQuery(item.name);
+                              performFullSearch(item.name);
+                            }}
+                          />
+                        )}
                         keyboardShouldPersistTaps="handled"
                     />
                 )}
@@ -254,31 +129,24 @@ export default function SearchScreen({ navigation, route }: Props) {
 
         if (type === 'store') {
             return (
-                <StoreGrid 
-                  stores={results} 
-                  isLoading={false} 
+                <StoreGrid
+                  stores={results as Store[]}
+                  isLoading={false}
                   onStorePress={(store) => navigation.navigate('StoreDetails', { storeId: store.id, name: store.name })}
-                  // 👇 FIX 3: Match spacing to Marketplace
-                  contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 50 }} 
+                  contentContainerStyle={styles.storeResultsContainer}
                 />
             );
         } else {
             return (
-                <ProductGrid 
-                  products={results} 
-                  isLoading={false} 
-                  // 👇 FIX 4: Match spacing to Marketplace
-                  contentContainerStyle={{ 
-                    paddingHorizontal: 24, 
-                    paddingTop: 24, 
-                    paddingBottom: 50,
-                    backgroundColor: 'transparent' 
-                  }} 
-                  columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
-                  
-                  onProductPress={(item) => navigation.navigate('ProductDetails', { 
-                    productId: item.id, name: item.name, price: item.price, 
-                    image_url: item.image_url, description: item.description, category: item.category 
+                <ProductGrid
+                  products={results as Product[]}
+                  isLoading={false}
+                  contentContainerStyle={styles.productResultsContainer}
+                  columnWrapperStyle={styles.productColumnWrapper}
+
+                  onProductPress={(item) => navigation.navigate('ProductDetails', {
+                    productId: item.id, name: item.name, price: item.price,
+                    image_url: item.image_url, description: item.description, category: item.category
                   })}
                   onAddToCart={(item) => {
                     addToCart({ id: item.id, name: item.name, price: item.price, image_url: item.image_url });
@@ -294,13 +162,13 @@ export default function SearchScreen({ navigation, route }: Props) {
     <SafeAreaView className="flex-1 bg-[#F5F5F0]" edges={['top']}>
       {/* HEADER */}
       <View className="flex-row items-center px-4 py-2 border-b border-gray-200/50 bg-[#F5F5F0] gap-3 pb-4">
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
           className="w-10 h-10 items-center justify-center rounded-full bg-white border border-gray-100 shadow-sm"
         >
           <ArrowLeft size={20} color="#1F2937" style={{ transform: [{ rotateY: isRTL ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
-        
+
         <View className="flex-1 flex-row items-center bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100">
           <Search size={18} color="#D4AF37" />
           <TextInput
@@ -328,3 +196,21 @@ export default function SearchScreen({ navigation, route }: Props) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  storeResultsContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 50,
+  },
+  productResultsContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 50,
+    backgroundColor: 'transparent',
+  },
+  productColumnWrapper: {
+    justifyContent: 'space-between' as const,
+    marginBottom: 16,
+  },
+});
