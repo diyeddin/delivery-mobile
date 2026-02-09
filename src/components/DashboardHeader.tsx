@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Search, MapPin, ChevronDown, SlidersHorizontal } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
@@ -63,7 +63,7 @@ export default function DashboardHeader({
         <TouchableOpacity 
           onPress={onFilterPress}
           className="bg-white border border-gray-200 p-2 rounded-full me-2 shadow-sm active:bg-gray-50 items-center justify-center"
-          style={{ width: 34, height: 34 }} // Force square aspect ratio if needed, or rely on padding
+          style={styles.filterButton}
         >
           <SlidersHorizontal size={14} color="#1F2937" />
         </TouchableOpacity>
@@ -73,7 +73,7 @@ export default function DashboardHeader({
           horizontal 
           showsHorizontalScrollIndicator={false} 
           className="flex-1"
-          contentContainerStyle={{ paddingRight: 10, alignItems: 'center' }} // Center items vertically inside scroll
+          contentContainerStyle={styles.categoryScrollContent}
         >
           {categories.map((cat) => (
             <TouchableOpacity
@@ -95,3 +95,14 @@ export default function DashboardHeader({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  filterButton: {
+    width: 34,
+    height: 34,
+  },
+  categoryScrollContent: {
+    paddingRight: 10,
+    alignItems: 'center' as const,
+  },
+});

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
@@ -61,92 +61,41 @@ export default function AnimatedHeader({
   return (
     <View
       pointerEvents="box-none"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: insets.top + headerHeight,
-        paddingTop: insets.top,
-        zIndex: 100,
-      }}
+      style={[styles.container, { height: insets.top + headerHeight, paddingTop: insets.top }]}
     >
       {/* Header background that fades in */}
       <Animated.View
-        style={{
-          opacity: headerOpacity,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: backgroundColor,
-          borderBottomWidth: 1,
-          borderBottomColor: 'rgba(15, 15, 15, 0.05)',
-        }}
+        style={[styles.backgroundBase, { opacity: headerOpacity, backgroundColor }]}
       />
 
       {/* Header content */}
       <View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          justifyContent: 'space-between',
-        }}
+        style={styles.contentRow}
       >
         {/* Back button - Always visible */}
-        <View style={{ width: 40, height: 40, position: 'relative' }}>
+        <View style={styles.backButtonContainer}>
           <TouchableOpacity
             onPress={onBackPress}
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={styles.backButtonTouchable}
             activeOpacity={0.7}
           >
             {/* White back button with background (visible when header is transparent) */}
             <Animated.View
-              style={{
-                position: 'absolute',
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
+              style={[styles.backButtonOverlay, {
                 opacity: headerOpacity.interpolate({
                   inputRange: [0, 1],
                   outputRange: [1, 0],
                 }),
-              }}
+              }]}
             >
-              <View
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                  padding: 8,
-                  borderRadius: 20,
-                  width: 36,
-                  height: 36,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <View style={styles.darkCircle}>
                 <ArrowLeft color="#FFFFFF" size={20} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
               </View>
             </Animated.View>
 
             {/* Dark back button (visible when header is solid) */}
             <Animated.View
-              style={{
-                position: 'absolute',
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: headerOpacity,
-              }}
+              style={[styles.backButtonOverlay, { opacity: headerOpacity }]}
             >
               <ArrowLeft color="#0F0F0F" size={24} style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />
             </Animated.View>
@@ -155,22 +104,14 @@ export default function AnimatedHeader({
 
         {/* Title in header - slides up and fades in */}
         <Animated.View
-          style={{
-            position: 'absolute',
-            left: 60,
+          style={[styles.titleContainer, {
             right: rightAction ? 60 : 60,
-            alignItems: 'center',
             opacity: titleOpacity,
             transform: [{ translateY: titleTranslateY }],
-          }}
+          }]}
         >
           <Text
-            style={{
-              fontSize: 18,
-              fontWeight: '700',
-              color: '#0F0F0F',
-              fontFamily: 'System',
-            }}
+            style={styles.titleText}
             numberOfLines={1}
           >
             {title}
@@ -179,7 +120,7 @@ export default function AnimatedHeader({
 
         {/* Optional right action */}
         {rightAction && (
-          <View style={{ width: 40, height: 40 }}>
+          <View style={styles.rightAction}>
             {rightAction}
           </View>
         )}
@@ -187,3 +128,71 @@ export default function AnimatedHeader({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  backgroundBase: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15, 15, 15, 0.05)',
+  },
+  contentRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+  },
+  backButtonContainer: {
+    width: 40,
+    height: 40,
+    position: 'relative',
+  },
+  backButtonTouchable: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonOverlay: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  darkCircle: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    padding: 8,
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleContainer: {
+    position: 'absolute',
+    left: 60,
+    alignItems: 'center',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F0F0F',
+    fontFamily: 'System',
+  },
+  rightAction: {
+    width: 40,
+    height: 40,
+  },
+});

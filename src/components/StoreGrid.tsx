@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { 
-  View, Text, FlatList, Animated, RefreshControl, 
-  ActivityIndicator, Platform 
+import React, { useCallback } from 'react';
+import {
+  View, Text, FlatList, RefreshControl,
+  ActivityIndicator, StyleProp, ViewStyle
 } from 'react-native';
-import StoreCard from './StoreCard'; // 👈 Imported your component
+import StoreCard from './StoreCard';
+import FadeInWrapper from './FadeInWrapper';
 import { useLanguage } from '../context/LanguageContext';
 import { Store } from '../types';
 
@@ -14,48 +15,14 @@ interface StoreGridProps {
   onRefresh?: () => void;
   onStorePress: (store: Store) => void;
   ListHeaderComponent?: React.ReactElement | null;
-  
+
   // Pagination Props
   onEndReached?: () => void;
   onEndReachedThreshold?: number;
   ListFooterComponent?: React.ReactElement | null;
-  
-  contentContainerStyle?: any; 
+
+  contentContainerStyle?: StyleProp<ViewStyle>;
 }
-
-// --- ANIMATION WRAPPER ---
-const FadeInWrapper = ({ children, index }: { children: React.ReactNode, index: number }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    const delay = (index % 10) * 50; 
-    Animated.parallel([
-      Animated.timing(fadeAnim, { 
-        toValue: 1, 
-        duration: 500, 
-        delay, 
-        useNativeDriver: true 
-      }),
-      Animated.timing(translateY, { 
-        toValue: 0, 
-        duration: 500, 
-        delay, 
-        useNativeDriver: true 
-      })
-    ]).start();
-  }, []);
-
-  return (
-    <Animated.View 
-      style={{ opacity: fadeAnim, transform: [{ translateY }], flex: 1 }}
-      renderToHardwareTextureAndroid={true} 
-      needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-    >
-      {children}
-    </Animated.View>
-  );
-};
 
 // --- MAIN COMPONENT ---
 export default function StoreGrid({
@@ -72,6 +39,21 @@ export default function StoreGrid({
 }: StoreGridProps) {
   const { t } = useLanguage();
 
+  const renderItem = useCallback(({ item, index }: { item: Store; index: number }) => (
+    <View style={{ width: '49%', marginBottom: 8 }}>
+      <FadeInWrapper index={index}>
+        <StoreCard
+          id={item.id}
+          name={item.name}
+          category={item.category || "Luxury"}
+          image_url={item.banner_url || item.image_url}
+          rating={item.rating}
+          onPress={() => onStorePress(item)}
+        />
+      </FadeInWrapper>
+    </View>
+  ), [onStorePress]);
+
   if (isLoading && !refreshing && stores.length === 0) {
     return (
       <View className="flex-1 items-center justify-center mt-20">
@@ -81,49 +63,37 @@ export default function StoreGrid({
   }
 
   return (
-    <FlatList // Using standard FlatList since items are animated individually
+    <FlatList
       data={stores}
       keyExtractor={(item) => item.id.toString()}
-      
-      // 2-Column Grid
-      numColumns={2} 
+
+      numColumns={2}
       columnWrapperStyle={{ justifyContent: 'space-between', gap: 8 }}
-      
+
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
-      
+
       ListHeaderComponent={ListHeaderComponent}
-      
-      // Pagination Wiring
+
       onEndReached={onEndReached}
       onEndReachedThreshold={onEndReachedThreshold}
       ListFooterComponent={ListFooterComponent}
 
       refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh} 
-          tintColor="#D4AF37" 
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#D4AF37"
         />
       }
-      
-      renderItem={({ item, index }) => (
-        // Wrapper for 2-column layout width
-        <View style={{ width: '49%', marginBottom: 8 }}>
-          <FadeInWrapper index={index}>
-            <StoreCard 
-              id={item.id}
-              name={item.name}
-              category={item.category || "Luxury"} 
-              // Prioritize banner for the card image if available, else logo
-              image_url={item.banner_url || item.image_url}
-              rating={item.rating}
-              onPress={() => onStorePress(item)}
-            />
-          </FadeInWrapper>
-        </View>
-      )}
-      
+
+      renderItem={renderItem}
+
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={6}
+      windowSize={5}
+      initialNumToRender={6}
+
       ListEmptyComponent={
         <View className="items-center justify-center pt-20">
            <Text className="text-gray-400 font-serif">{t('no_stores')}</Text>

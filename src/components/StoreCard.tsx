@@ -12,7 +12,7 @@ interface StoreProps {
   onPress: () => void;
 }
 
-export default function StoreCard({ name, category, image_url, rating, onPress }: StoreProps) {
+export default React.memo(function StoreCard({ name, category, image_url, rating, onPress }: StoreProps) {
   const { t } = useLanguage();
   
   return (
@@ -63,4 +63,4 @@ export default function StoreCard({ name, category, image_url, rating, onPress }
       </View>
     </TouchableOpacity>
   );
-}
+});

@@ -7,7 +7,7 @@ import { Review } from '../types';
 interface ReviewsListProps {
   reviews: Review[];
   ListHeaderComponent?: React.ReactElement;
-  onScroll?: any; 
+  onScroll?: (...args: unknown[]) => void;
   isLoading?: boolean;
 }
 
@@ -19,7 +19,12 @@ export default function ReviewsList({
   onScroll,
   isLoading 
 }: ReviewsListProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const formatDate = (dateString: string) => {
+    const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+    return new Date(dateString).toLocaleDateString(locale);
+  };
 
   const renderReviewItem = ({ item }: { item: Review }) => (
     // 👇 WRAPPER: Matches sheet color to fill gaps, but doesn't cover the banner
@@ -33,7 +38,7 @@ export default function ReviewsList({
             <Text className="font-bold text-onyx text-sm">{item.user_name}</Text>
           </View>
           <Text className="text-xs text-gray-400">
-            {new Date(item.created_at).toLocaleDateString()}
+            {formatDate(item.created_at)}
           </Text>
         </View>
         

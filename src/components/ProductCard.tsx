@@ -11,7 +11,7 @@ interface ProductProps {
   onAddToCart: () => void;
 }
 
-export default function ProductCard({ name, price, image_url, category, onPress, onAddToCart }: ProductProps) {
+export default React.memo(function ProductCard({ name, price, image_url, category, onPress, onAddToCart }: ProductProps) {
   return (
     <TouchableOpacity 
       onPress={onPress}
@@ -61,4 +61,4 @@ export default function ProductCard({ name, price, image_url, category, onPress,
       </View>
     </TouchableOpacity>
   );
-}
+});
