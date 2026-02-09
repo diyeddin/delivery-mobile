@@ -29,7 +29,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 export default function OrderDetailsScreen({ route, navigation }: Props) {
   const { orderId } = route.params;
   const { t, isRTL, language } = useLanguage();
-  const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = language === 'ar' ? 'ar-u-nu-latn' : 'en-US';
   
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);

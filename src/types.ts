@@ -119,6 +119,7 @@ export interface MenuRowProps {
 // Define the specific screens inside Profile
 export type ProfileStackParamList = {
   ProfileMain: undefined; // The menu screen
+  LanguageSettings: undefined;
   Orders: undefined;
   OrderDetails: { orderId: number };
   Addresses: undefined; // will be deprecated

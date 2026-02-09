@@ -58,6 +58,12 @@ export const translations = {
     // Profile
     language: "Language",
     changeLanguage: "Change Language",
+    auto_device_language: "Auto (Device Language)",
+    currently: "Currently",
+    language_settings: "Language Settings",
+    select_language: "Select Language",
+    auto_mode_active: "The app language will follow your device settings",
+    manual_mode_active: "The app language is set manually",
     paymentMethods: "Payment Methods",
     addresses: "Addresses",
     orders: "Orders",
@@ -333,6 +339,12 @@ export const translations = {
     // Profile
     language: "اللغة",
     changeLanguage: "تغيير اللغة",
+    auto_device_language: "تلقائي (لغة الجهاز)",
+    currently: "حالياً",
+    language_settings: "إعدادات اللغة",
+    select_language: "اختر اللغة",
+    auto_mode_active: "ستتبع لغة التطبيق إعدادات جهازك",
+    manual_mode_active: "لغة التطبيق محددة يدوياً",
     paymentMethods: "طرق الدفع",
     addresses: "العناوين",
     orders: "طلباتي",
@@ -555,3 +567,4 @@ export const translations = {
 };
 
 export type Language = 'en' | 'ar';
+export type LanguagePreference = 'auto' | 'en' | 'ar';

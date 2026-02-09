@@ -30,6 +30,7 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
 import AddAddressScreen from './src/screens/AddAddressScreen';
 import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
+import LanguageSettingsScreen from './src/screens/LanguageSettingsScreen';
 
 import { HomeStackParamList, ProfileStackParamList } from './src/types';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -142,6 +143,7 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
       <ProfileStack.Screen name="Orders" component={OrdersScreen} />
       <ProfileStack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       <ProfileStack.Screen name="Addresses" component={AddressesScreen} />

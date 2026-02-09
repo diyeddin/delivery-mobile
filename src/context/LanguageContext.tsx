@@ -1,14 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { I18nManager, NativeModules, Alert } from 'react-native'; 
+import { I18nManager, NativeModules, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as Updates from 'expo-updates';
-import { translations, Language } from '../i18n/translations';
+import * as Localization from 'expo-localization';
+import { translations, Language, LanguagePreference } from '../i18n/translations';
 
 type LanguageContextType = {
   language: Language;
+  preference: LanguagePreference;
+  deviceLanguage: Language;
   t: (key: keyof typeof translations['en']) => string;
-  changeLanguage: (lang: Language) => Promise<void>;
+  changeLanguage: (pref: LanguagePreference) => Promise<void>;
   isRTL: boolean;
+  isAutoMode: boolean;
 };
 
 const LanguageContext = createContext<LanguageContextType>({} as any);
@@ -17,6 +21,23 @@ export const useLanguage = () => useContext(LanguageContext);
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguage] = useState<Language>('en');
+  const [preference, setPreference] = useState<LanguagePreference>('auto');
+  const [deviceLanguage, setDeviceLanguage] = useState<Language>('en');
+
+  // Detect device language
+  const detectDeviceLanguage = (): Language => {
+    const locales = Localization.getLocales();
+    const primaryLocale = locales[0];
+    const langCode = primaryLocale?.languageCode;
+
+    // Check if it's Arabic
+    if (langCode === 'ar') {
+      return 'ar';
+    }
+
+    // Default to English for all other languages
+    return 'en';
+  };
 
   // 1. Define Reload Function FIRST so it can be used by loadLanguage
   const reloadApp = async () => {
@@ -37,40 +58,57 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     }
   };
 
-  // 2. Load Language with SYNC CHECK
+  // 2. Load Language with SYNC CHECK and MIGRATION
   const loadLanguage = async () => {
     try {
-      const savedLang = await SecureStore.getItemAsync('user_language');
-      const currentIsRTL = I18nManager.isRTL;
+      // Step 1: Detect device language
+      const deviceLang = detectDeviceLanguage();
+      setDeviceLanguage(deviceLang);
 
-      // Check A: User wants Arabic ('ar'), but App is LTR -> FIX IT
-      if (savedLang === 'ar' && !currentIsRTL) {
-        console.log("Syncing Layout: Forcing RTL...");
-        I18nManager.allowRTL(true);
-        I18nManager.forceRTL(true);
-        await reloadApp(); // Restart immediately
-        return;
+      // Step 2: Migration - Check old key first
+      const oldSavedLang = await SecureStore.getItemAsync('user_language');
+      let savedPreference = await SecureStore.getItemAsync('user_language_preference');
+
+      if (!savedPreference && oldSavedLang) {
+        // Migrate: old 'en'/'ar' becomes manual preference
+        savedPreference = oldSavedLang as LanguagePreference;
+        await SecureStore.setItemAsync('user_language_preference', savedPreference);
+        await SecureStore.deleteItemAsync('user_language');
       }
 
-      // Check B: User wants English ('en'), but App is RTL -> FIX IT
-      if (savedLang === 'en' && currentIsRTL) {
-        console.log("Syncing Layout: Forcing LTR...");
-        I18nManager.allowRTL(false);
-        I18nManager.forceRTL(false);
-        await reloadApp(); // Restart immediately
-        return;
-      }
-
-      // Check C: All good, just set the state
-      if (savedLang === 'ar' || savedLang === 'en') {
-        setLanguage(savedLang);
+      // Step 3: Determine preference
+      let finalPreference: LanguagePreference;
+      if (!savedPreference) {
+        // First launch: Default to 'auto'
+        finalPreference = 'auto';
+        await SecureStore.setItemAsync('user_language_preference', 'auto');
       } else {
-        // First time launch? Match device setting
-        const deviceIsRTL = I18nManager.isRTL;
-        setLanguage(deviceIsRTL ? 'ar' : 'en');
+        finalPreference = savedPreference as LanguagePreference;
       }
+
+      // Step 4: Resolve active language
+      const activeLang = finalPreference === 'auto' ? deviceLang : finalPreference as Language;
+
+      // Step 5: Sync RTL/LTR with I18nManager
+      const currentIsRTL = I18nManager.isRTL;
+      const shouldBeRTL = activeLang === 'ar';
+
+      if (shouldBeRTL !== currentIsRTL) {
+        I18nManager.allowRTL(shouldBeRTL);
+        I18nManager.forceRTL(shouldBeRTL);
+        await reloadApp();
+        return;
+      }
+
+      // Step 6: Set state
+      setPreference(finalPreference);
+      setLanguage(activeLang);
+
     } catch (error) {
       console.error("Failed to load language:", error);
+      setDeviceLanguage('en');
+      setLanguage('en');
+      setPreference('en');
     }
   };
 
@@ -83,27 +121,36 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     return translations[language][key] || key;
   };
 
-  const changeLanguage = async (newLang: Language) => {
-    if (newLang === language) return;
+  const changeLanguage = async (newPref: LanguagePreference) => {
+    if (newPref === preference) return;
 
-    const isArabic = newLang === 'ar';
-    
+    // Resolve what language we'll actually use
+    const newActiveLang = newPref === 'auto' ? deviceLanguage : newPref as Language;
+
     // Save preference
-    await SecureStore.setItemAsync('user_language', newLang);
-    setLanguage(newLang);
+    await SecureStore.setItemAsync('user_language_preference', newPref);
+    setPreference(newPref);
+    setLanguage(newActiveLang);
 
-    // Update Layout Manager
-    if (isArabic !== I18nManager.isRTL) {
-      I18nManager.allowRTL(isArabic);
-      I18nManager.forceRTL(isArabic);
-      
-      // Reload to apply
+    // Update RTL layout if needed
+    const shouldBeRTL = newActiveLang === 'ar';
+    if (shouldBeRTL !== I18nManager.isRTL) {
+      I18nManager.allowRTL(shouldBeRTL);
+      I18nManager.forceRTL(shouldBeRTL);
       await reloadApp();
     }
   };
 
   return (
-    <LanguageContext.Provider value={{ language, t, changeLanguage, isRTL: language === 'ar' }}>
+    <LanguageContext.Provider value={{
+      language,
+      preference,
+      deviceLanguage,
+      t,
+      changeLanguage,
+      isRTL: language === 'ar',
+      isAutoMode: preference === 'auto'
+    }}>
       {children}
     </LanguageContext.Provider>
   );

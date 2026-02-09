@@ -29,9 +29,10 @@ interface Props {
 }
 
 // Helper Row Component
-const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: {
+const MenuRow = ({ icon: Icon, label, subtitle, onPress, isDestructive = false, isRTL }: {
   icon: React.ComponentType<{ size: number; color: string }>;
   label: string;
+  subtitle?: string;
   onPress: () => void;
   isDestructive?: boolean;
   isRTL: boolean;
@@ -41,13 +42,18 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: {
     className="flex-row items-center justify-between p-4 border-b border-gray-100 bg-white"
     activeOpacity={0.7}
   >
-    <View className="flex-row items-center">
+    <View className="flex-row items-center flex-1">
       <View className={`p-2 rounded-lg ${isDestructive ? 'bg-red-50' : 'bg-gray-50'} me-4`}>
         <Icon size={20} color={isDestructive ? '#EF4444' : '#0F0F0F'} />
       </View>
-      <Text className={`text-base font-medium ${isDestructive ? 'text-red-500' : 'text-onyx'}`}>
-        {label}
-      </Text>
+      <View className="flex-1">
+        <Text className={`text-base font-medium ${isDestructive ? 'text-red-500' : 'text-onyx'}`}>
+          {label}
+        </Text>
+        {subtitle && (
+          <Text className="text-xs text-gray-500 mt-0.5">{subtitle}</Text>
+        )}
+      </View>
     </View>
     {!isDestructive && <ChevronRight size={18} color="#9CA3AF" style={{ transform: [{ rotate: isRTL ? '180deg' : '0deg' }] }} />}
   </TouchableOpacity>
@@ -55,7 +61,7 @@ const MenuRow = ({ icon: Icon, label, onPress, isDestructive = false, isRTL }: {
 
 export default function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
-  const { t, language, changeLanguage, isRTL } = useLanguage();
+  const { t, language, preference, deviceLanguage, changeLanguage, isRTL } = useLanguage();
 
   const handleLogout = () => {
     Alert.alert(
@@ -73,21 +79,24 @@ export default function ProfileScreen({ navigation }: Props) {
     return (
       <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
         
-        {/* 1 NEW HEADER: Language Switcher Top Corner */}
+        {/* Language Switcher Top Corner */}
         <View className="flex-row justify-end px-6 py-4">
-          <TouchableOpacity 
-            onPress={() => changeLanguage(language === 'en' ? 'ar' : 'en')}
+          <TouchableOpacity
+            onPress={() => {
+              // Cycle: en → ar → auto → en
+              const sequence: ('en' | 'ar' | 'auto')[] = ['en', 'ar', 'auto'];
+              const currentIndex = sequence.indexOf(preference);
+              const nextPref = sequence[(currentIndex + 1) % 3];
+              changeLanguage(nextPref);
+            }}
             activeOpacity={0.8}
             className="flex-row items-center bg-white border border-gold-500/30 rounded-full px-4 py-2 shadow-sm"
           >
             <Globe size={16} color="#D4AF37" style={{ marginEnd: 8 }} />
             <Text className="text-xs font-bold text-onyx uppercase">
-              {language === 'en' ? 'English' : 'العربية'}
-            </Text>
-            {/* Divider */}
-            <View className="h-3 w-[1px] bg-gray-300 mx-2" />
-            <Text className="text-xs font-bold text-gray-400 uppercase">
-              {language === 'en' ? 'AR' : 'EN'}
+              {preference === 'auto' && `Auto (${language === 'en' ? 'EN' : 'AR'})`}
+              {preference === 'en' && 'English'}
+              {preference === 'ar' && 'العربية'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -176,27 +185,19 @@ export default function ProfileScreen({ navigation }: Props) {
           </Text>
         </View>
         <View className="bg-white mx-4 rounded-xl overflow-hidden shadow-sm mb-8">
-          
-          {/* 👇 LANGUAGE SWITCHER ROW */}
-          <TouchableOpacity
-            onPress={() => changeLanguage(language === 'en' ? 'ar' : 'en')}
-            className="flex-row items-center justify-between p-4 border-b border-gray-100 bg-white"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center">
-                <View className="bg-gray-50 p-2 rounded-lg me-4">
-                    <Globe size={20} color="#0F0F0F" />
-                </View>
-                <Text className="text-base font-medium text-onyx">{t('changeLanguage')}</Text>
-            </View>
 
-            {/* Language Toggle UI */}
-            <View className="flex-row items-center bg-gray-100 rounded-full px-3 py-1">
-                <Text className={`text-xs font-bold ${language === 'en' ? 'text-onyx' : 'text-gray-400'}`}>EN</Text>
-                <Text className="text-gray-300 mx-1">|</Text>
-                <Text className={`text-xs font-bold ${language === 'ar' ? 'text-onyx' : 'text-gray-400'}`}>AR</Text>
-            </View>
-          </TouchableOpacity>
+          {/* Language Settings Navigation */}
+          <MenuRow
+            icon={Globe}
+            label={t('changeLanguage')}
+            onPress={() => navigation.navigate('LanguageSettings')}
+            isRTL={isRTL}
+            subtitle={
+              preference === 'auto'
+                ? `${t('auto_device_language')} (${language === 'en' ? 'English' : 'العربية'})`
+                : language === 'en' ? 'English' : 'العربية'
+            }
+          />
 
           <MenuRow 
             icon={Bell} 

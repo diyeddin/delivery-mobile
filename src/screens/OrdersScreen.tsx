@@ -72,7 +72,7 @@ export default function OrdersScreen({ navigation }: Props) {
   }, []);
 
   const formatDate = (dateString: string) => {
-    const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+    const locale = language === 'ar' ? 'ar-u-nu-latn' : 'en-US';
     const date = new Date(dateString);
     return date.toLocaleDateString(locale) + ' ' + date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   };

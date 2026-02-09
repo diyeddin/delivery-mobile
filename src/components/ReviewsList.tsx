@@ -13,16 +13,16 @@ interface ReviewsListProps {
 
 const SHEET_BG_COLOR = '#F5F5F0';
 
-export default function ReviewsList({ 
-  reviews, 
-  ListHeaderComponent, 
+export default function ReviewsList({
+  reviews,
+  ListHeaderComponent,
   onScroll,
-  isLoading 
+  isLoading
 }: ReviewsListProps) {
   const { t, language } = useLanguage();
 
   const formatDate = (dateString: string) => {
-    const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+    const locale = language === 'ar' ? 'ar-u-nu-latn' : 'en-US';
     return new Date(dateString).toLocaleDateString(locale);
   };
 
