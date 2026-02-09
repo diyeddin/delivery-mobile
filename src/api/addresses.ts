@@ -1,4 +1,5 @@
 import client from './client';
+import type { Address } from '../types';
 
 interface AddressPayload {
   label: string;
@@ -8,32 +9,31 @@ interface AddressPayload {
 }
 
 export const addressesApi = {
-  getAll: async () => {
-    const res = await client.get('/addresses/');
+  getAll: async (signal?: AbortSignal): Promise<Address[]> => {
+    const res = await client.get('/addresses/', { signal });
     return res.data;
   },
 
-  getDefault: async () => {
-    const res = await client.get('/addresses/default');
+  getDefault: async (signal?: AbortSignal): Promise<Address> => {
+    const res = await client.get('/addresses/default', { signal });
     return res.data;
   },
 
-  create: async (payload: AddressPayload) => {
+  create: async (payload: AddressPayload): Promise<Address> => {
     const res = await client.post('/addresses/', payload);
     return res.data;
   },
 
-  update: async (id: number, payload: Partial<AddressPayload>) => {
+  update: async (id: number, payload: Partial<AddressPayload>): Promise<Address> => {
     const res = await client.patch(`/addresses/${id}`, payload);
     return res.data;
   },
 
-  remove: async (id: number) => {
-    const res = await client.delete(`/addresses/${id}`);
-    return res.data;
+  remove: async (id: number): Promise<void> => {
+    await client.delete(`/addresses/${id}`);
   },
 
-  setDefault: async (id: number) => {
+  setDefault: async (id: number): Promise<Address> => {
     const res = await client.patch(`/addresses/${id}`, { is_default: true });
     return res.data;
   },

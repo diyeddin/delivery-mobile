@@ -1,4 +1,5 @@
 // src/types.ts
+import type { ReactNode } from 'react';
 
 // ─── Data Models ────────────────────────────────────
 
@@ -26,14 +27,45 @@ export interface Product {
   description: string;
 }
 
+export interface OrderItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  price_at_purchase: number;
+  product?: { name: string; image_url?: string };
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'assigned'
+  | 'picked_up'
+  | 'on_the_way'
+  | 'delivered'
+  | 'canceled';
+
 export interface Order {
   id: number;
   group_id?: string;
   created_at: string;
   total_price: number;
-  status: string;
+  status: OrderStatus;
   store: { name: string; image_url?: string };
-  items: any[];
+  items: OrderItem[];
+}
+
+export interface OrderDetail extends Order {
+  is_reviewed?: boolean;
+  delivery_address?: string;
+  note?: string;
+  store: {
+    id: number;
+    name: string;
+    image_url?: string;
+    phone_number?: string;
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
 export interface OrderGroup {
@@ -45,10 +77,10 @@ export interface OrderGroup {
 
 export interface ActiveOrder {
   id: number;
-  status: string;
+  status: OrderStatus;
   total_price: number;
   store?: { name: string };
-  items: any[];
+  items: OrderItem[];
 }
 
 export interface User {
@@ -58,6 +90,28 @@ export interface User {
   name?: string;
   id?: number;
   exp?: number;
+}
+
+export interface CartItemInput {
+  id: number;
+  name: string;
+  price: number;
+  image_url?: string;
+  store_id?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+}
+
+export type PlaceOrderResponse = Order | Order[];
+
+export interface MenuRowProps {
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
 }
 
 // ─── Navigation ─────────────────────────────────────
