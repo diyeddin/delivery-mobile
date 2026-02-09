@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { storage } from '../utils/storage';
 import { View, ActivityIndicator, Platform } from 'react-native';
-import { setupAuthInterceptor } from '../api/client';
+import { authInterceptor } from '../api/client';
 import Toast from 'react-native-toast-message';
 import { usersApi } from '../api/users';
 import { User } from '../types';
@@ -42,22 +42,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // --- LOGOUT ---
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setToken(null);
     setUser(null);
     await storage.removeToken();
-  };
+  }, []);
+
+  // Keep a ref to the latest logout for the interceptor
+  const logoutRef = useRef(logout);
+  useEffect(() => { logoutRef.current = logout; }, [logout]);
 
   // --- INTERCEPTOR ---
   useEffect(() => {
-    setupAuthInterceptor(() => {
-      logout();
+    authInterceptor.setup(() => {
+      logoutRef.current();
       Toast.show({
         type: 'error',
         text1: 'Session Expired',
         text2: 'Please log in again.',
       });
     });
+    return () => {
+      authInterceptor.teardown();
+    };
   }, []);
 
   // --- INITIAL LOAD ---

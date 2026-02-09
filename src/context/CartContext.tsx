@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import type { CartItemInput } from '../types';
 
 // 1. Define what a Cart Item looks like
 export interface CartItem {
@@ -13,7 +14,7 @@ export interface CartItem {
 // 2. Define the Context Shape
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: any) => void;
+  addToCart: (product: CartItemInput) => void;
   removeFromCart: (productId: number) => void;
   decreaseCount: (productId: number) => void;
   clearCart: () => void;
@@ -27,64 +28,59 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
   // Calculate generic total stats
-  const count = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const count = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
+  const totalPrice = useMemo(() => items.reduce((sum, item) => sum + (item.price * item.quantity), 0), [items]);
 
   // A. Add Item Logic
-  const addToCart = (product: any) => {
+  const addToCart = useCallback((product: CartItemInput) => {
     setItems(currentItems => {
-      // Check if item is already in cart
       const existingItem = currentItems.find(item => item.id === product.id);
-      
+
       if (existingItem) {
-        // If yes, just increase quantity
-        return currentItems.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 } 
+        return currentItems.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      
-      // If no, add new item
-      return [...currentItems, { 
-        id: product.id, 
-        name: product.name, 
-        price: product.price, 
+
+      return [...currentItems, {
+        id: product.id,
+        name: product.name,
+        price: product.price,
         image_url: product.image_url,
         quantity: 1,
-        store_id: product.store_id
+        store_id: product.store_id ?? 0
       }];
     });
-  };
+  }, []);
 
   // B. Remove Item Logic
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = useCallback((productId: number) => {
     setItems(currentItems => currentItems.filter(item => item.id !== productId));
-  };
+  }, []);
 
-  // C. Decrease Count Logic (New)
-  const decreaseCount = (productId: number) => {
+  // C. Decrease Count Logic
+  const decreaseCount = useCallback((productId: number) => {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === productId);
-      
-      // If quantity is 1, remove it completely
+
       if (existingItem?.quantity === 1) {
         return currentItems.filter(item => item.id !== productId);
       }
 
-      // Otherwise, just subtract 1
-      return currentItems.map(item => 
-        item.id === productId 
-          ? { ...item, quantity: item.quantity - 1 } 
+      return currentItems.map(item =>
+        item.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
           : item
       );
     });
-  };
+  }, []);
 
   // D. Clear Cart Logic
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
-  };
+  }, []);
 
   return (
     <CartContext.Provider value={{
