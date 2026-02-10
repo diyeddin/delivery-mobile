@@ -19,13 +19,14 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { getSignal } = useAbortController();
   
   // 1. Initialize State with the navigation params (so it loads instantly)
-  const { productId, name: initialName, price: initialPrice, description: initialDesc, image_url: initialImg } = route.params;
+  const { productId, name: initialName, price: initialPrice, description: initialDesc, image_url: initialImg, category: initialCategory } = route.params;
 
   const [product, setProduct] = useState({
     name: initialName,
     price: initialPrice,
     description: initialDesc,
-    image_url: initialImg
+    image_url: initialImg,
+    category: initialCategory
   });
 
   const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +42,8 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
         name: data.name,
         price: data.price,
         description: data.description,
-        image_url: data.image_url
+        image_url: data.image_url,
+        category: data.category
       });
 
     } catch (error: unknown) {
@@ -90,7 +92,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
               {/* Use state 'product' */}
               <Text className="text-3xl font-serif text-onyx mb-2">{product.name}</Text>
               <Text className="text-gray-500 text-xs uppercase tracking-widest font-bold">
-                {t('luxury_collection')} {/* add category instead */}
+                {product.category} {/* add category instead */}
               </Text> 
             </View>
             <Text className="text-2xl text-gold-600 font-serif">

@@ -550,7 +550,7 @@ export const translations = {
     no_products: "لم يتم العثور على منتجات.",
     no_stores: "لم يتم العثور على متاجر.",
     loading_store: "جاري تحميل المتجر...",
-    level_1: "المستوى 1",
+    level_1: "الطابق 1",
 
     // Register
     signup_subtitle: "سجل الآن وابدأ التسوق",
