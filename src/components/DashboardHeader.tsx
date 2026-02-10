@@ -29,9 +29,9 @@ export default function DashboardHeader({
   const { t } = useLanguage();
 
   return (
-    <View className="pt-3">
+    <View className="pt-1">
       {/* TOP ROW: Search + Address */}
-      <View className="flex-row items-center mb-2 gap-1">
+      <View className="flex-row items-center mb-1 gap-1">
         <TouchableOpacity 
           onPress={onSearchPress}
           activeOpacity={0.9}
@@ -57,7 +57,7 @@ export default function DashboardHeader({
       </View>
 
       {/* 👇 FILTER & CATEGORIES ROW */}
-      <View className="flex-row items-center mt-3 pb-2">  
+      <View className="flex-row items-center mt-1 pb-2">  
         
         {/* Filter Button: Updated to match Pill Height & Shape */}
         <TouchableOpacity 
