@@ -16,7 +16,7 @@ import { useAbortController } from '../hooks/useAbortController';
 import { handleApiError } from '../utils/handleApiError';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-const PAGE_SIZE = 4; // Testing with 4
+const PAGE_SIZE = 20; // Testing with 4
 
 export default function MarketplaceScreen({ navigation }: { navigation: NativeStackNavigationProp<HomeStackParamList> }) {
   const { t } = useLanguage();

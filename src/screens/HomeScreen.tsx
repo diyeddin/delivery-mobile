@@ -19,7 +19,7 @@ import FilterModal from '../components/FilterModal';
 import { useAbortController } from '../hooks/useAbortController';
 import { handleApiError } from '../utils/handleApiError';
 
-const PAGE_SIZE = 4; // Keeping your testing size
+const PAGE_SIZE = 20; // Keeping your testing size
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 interface Props { navigation: HomeScreenNavigationProp; }

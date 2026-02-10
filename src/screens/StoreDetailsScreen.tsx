@@ -21,7 +21,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'StoreDetails'>;
 
 const BANNER_HEIGHT = 280;
 const SHEET_BG_COLOR = '#F5F5F0';
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 20;
 
 export default function StoreDetailsScreen({ route, navigation }: Props) {
   const { storeId, name } = route.params;
