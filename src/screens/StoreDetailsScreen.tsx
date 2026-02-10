@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, Image, Animated, StatusBar, ActivityIndicator, TouchableOpacity
+  View, Text, Image, Animated, StatusBar, ActivityIndicator, TouchableOpacity, Dimensions
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,27 +37,49 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
   const [activeTab, setActiveTab] = useState<'products' | 'reviews'>('products');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
-  
+
   const [loading, setLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // State for dynamic header fading
+  const [contentSize, setContentSize] = useState<{ width: number; height: number } | null>(null);
+  const [maxScrollDistance, setMaxScrollDistance] = useState(0);
+
   const { addToCart } = useCart();
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  // Get viewport height from window dimensions and safe area
+  const windowHeight = Dimensions.get('window').height;
+  const viewportHeight = windowHeight - insets.top - insets.bottom - BANNER_HEIGHT - 60; // 60 for header and padding
+
   // --- ANIMATIONS ---
-  const bannerScale = scrollY.interpolate({ 
-    inputRange: [-BANNER_HEIGHT, 0], 
-    outputRange: [2, 1], 
-    extrapolate: 'clamp' 
+  const bannerScale = scrollY.interpolate({
+    inputRange: [-BANNER_HEIGHT, 0],
+    outputRange: [2, 1],
+    extrapolate: 'clamp'
   });
-  
-  const bannerTranslateY = scrollY.interpolate({ 
-    inputRange: [0, BANNER_HEIGHT], 
-    outputRange: [0, -BANNER_HEIGHT / 2], 
-    extrapolate: 'clamp' 
+
+  const bannerTranslateY = scrollY.interpolate({
+    inputRange: [0, BANNER_HEIGHT],
+    outputRange: [0, -BANNER_HEIGHT / 2],
+    extrapolate: 'clamp'
   });
+
+  // --- HANDLERS ---
+  const handleContentSizeChange = (width: number, height: number) => {
+    setContentSize({ width, height });
+  };
+
+  // --- EFFECTS ---
+  // Calculate maxScrollDistance based on content size and viewport height
+  useEffect(() => {
+    if (contentSize && viewportHeight > 0) {
+      const max = Math.max(0, contentSize.height - viewportHeight);
+      setMaxScrollDistance(max);
+    }
+  }, [contentSize, viewportHeight]);
 
   // --- DATA FETCHING ---
   const fetchInitialData = async () => {
@@ -184,36 +206,37 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
         triggerHeight={BANNER_HEIGHT - 60}
         onBackPress={() => navigation.goBack()}
         backgroundColor={SHEET_BG_COLOR}
+        maxScrollDistance={maxScrollDistance}
       />
 
       {/* Content Switcher */}
       {activeTab === 'products' ? (
-        <ProductGrid 
+        <ProductGrid
           products={products}
           isLoading={false}
           ListHeaderComponent={renderListHeader}
-          useSolidRowLayout={true} 
-          itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR }} 
-          columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }} 
-          
-          contentContainerStyle={{ 
+          useSolidRowLayout={true}
+          itemContainerStyle={{ backgroundColor: SHEET_BG_COLOR }}
+          columnWrapperStyle={{ backgroundColor: SHEET_BG_COLOR, paddingHorizontal: 12 }}
+
+          contentContainerStyle={{
               paddingBottom: 0,
-              paddingHorizontal: 0, 
+              paddingHorizontal: 0,
               backgroundColor: 'transparent'
           }}
-          
+
           onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true }
           )}
-          
+
           refreshing={refreshing}
           onRefresh={onRefresh}
           refreshOffset={insets.top + 60}
 
           onEndReached={fetchMoreProducts}
           onEndReachedThreshold={0.5}
-          
+
           ListFooterComponent={
               fetchingMore ? (
                  <View className="py-8 items-center" style={{ backgroundColor: SHEET_BG_COLOR }}>
@@ -221,12 +244,12 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
                  </View>
               ) : <View style={{ height: 250, backgroundColor: SHEET_BG_COLOR }} />
           }
-          
+
           onProductPress={(item) => navigation.navigate('ProductDetails', {
-            productId: item.id, 
-            name: item.name, 
-            price: item.price, 
-            description: item.description ?? '', 
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            description: item.description ?? '',
             image_url: item.image_url,
             category: item.category
           })}
@@ -234,16 +257,21 @@ export default function StoreDetailsScreen({ route, navigation }: Props) {
             addToCart({ id: item.id, name: item.name, price: item.price, image_url: item.image_url });
             Toast.show({ type: 'success', text1: t('added_to_bag'), text2: item.name });
           }}
+
+          flatListProps={{
+            onContentSizeChange: handleContentSizeChange,
+          }}
         />
       ) : (
         // 👇 USING NEW COMPONENT
-        <ReviewsList 
+        <ReviewsList
           reviews={reviews}
           ListHeaderComponent={renderListHeader}
           onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }], 
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true }
           )}
+          onContentSizeChange={handleContentSizeChange}
         />
       )}
     </View>

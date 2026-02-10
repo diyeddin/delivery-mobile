@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,24 +7,27 @@ import { useLanguage } from '../context/LanguageContext';
 interface AnimatedHeaderProps {
   /** Title to display in the header */
   title: string;
-  
+
   /** Animated value for scroll position */
   scrollY: Animated.Value;
-  
+
   /** Height at which header becomes fully visible */
   triggerHeight?: number;
-  
+
   /** Callback when back button is pressed */
   onBackPress: () => void;
-  
+
   /** Background color of the header (default: '#F9F8F6') */
   backgroundColor?: string;
-  
+
   /** Optional right side action button */
   rightAction?: React.ReactNode;
-  
+
   /** Custom header height (default: 50) */
   headerHeight?: number;
+
+  /** Maximum scrollable distance in pixels - when provided, interpolation ranges adapt dynamically */
+  maxScrollDistance?: number;
 }
 
 export default function AnimatedHeader({
@@ -35,25 +38,75 @@ export default function AnimatedHeader({
   backgroundColor = '#F9F8F6',
   rightAction,
   headerHeight = 50,
+  maxScrollDistance,
 }: AnimatedHeaderProps) {
   const insets = useSafeAreaInsets();
   const { isRTL } = useLanguage();
 
+  // State for dynamic interpolation ranges
+  const [headerOpacityRange, setHeaderOpacityRange] = useState<[number, number]>([
+    triggerHeight - 120,
+    triggerHeight - 80,
+  ]);
+  const [titleOpacityRange, setTitleOpacityRange] = useState<[number, number]>([
+    triggerHeight - 100,
+    triggerHeight - 60,
+  ]);
+  const [titleTranslateYRange, setTitleTranslateYRange] = useState<[number, number]>([
+    triggerHeight - 100,
+    triggerHeight - 60,
+  ]);
+
+  // Helper function to calculate dynamic interpolation ranges
+  const calculateDynamicRanges = (
+    trigger: number,
+    maxScroll: number | undefined
+  ): { headerOpacity: [number, number]; titleOpacity: [number, number]; titleTranslateY: [number, number] } => {
+    // If no maxScroll available or content is non-scrollable, use fallback ranges
+    if (!maxScroll || maxScroll <= 0) {
+      return {
+        headerOpacity: [trigger - 120, trigger - 80],
+        titleOpacity: [trigger - 100, trigger - 60],
+        titleTranslateY: [trigger - 100, trigger - 60],
+      };
+    }
+
+    // Dynamic approach: adapt fade range to available scroll distance
+    // For short lists: use the entire maxScroll range for smooth fading
+    // For long lists: use a consistent 40px animation window
+    const fadeEndPoint = Math.min(100, maxScroll);
+    const fadeStartPoint = Math.max(0, fadeEndPoint - 40);
+
+    return {
+      headerOpacity: [fadeStartPoint, fadeEndPoint],
+      titleOpacity: [Math.max(0, fadeStartPoint - 20), Math.max(fadeStartPoint, fadeEndPoint - 20)],
+      titleTranslateY: [Math.max(0, fadeStartPoint - 20), Math.max(fadeStartPoint, fadeEndPoint - 20)],
+    };
+  };
+
+  // Recalculate ranges when maxScrollDistance or triggerHeight changes
+  useEffect(() => {
+    const ranges = calculateDynamicRanges(triggerHeight, maxScrollDistance);
+    setHeaderOpacityRange(ranges.headerOpacity);
+    setTitleOpacityRange(ranges.titleOpacity);
+    setTitleTranslateYRange(ranges.titleTranslateY);
+  }, [triggerHeight, maxScrollDistance]);
+
   // Animation interpolations
   const headerOpacity = scrollY.interpolate({
-    inputRange: [triggerHeight - 120, triggerHeight - 80],
+    inputRange: headerOpacityRange,
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
   const titleOpacity = scrollY.interpolate({
-    inputRange: [triggerHeight - 100, triggerHeight - 60],
+    inputRange: titleOpacityRange,
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
   const titleTranslateY = scrollY.interpolate({
-    inputRange: [triggerHeight - 100, triggerHeight - 60],
+    inputRange: titleTranslateYRange,
     outputRange: [10, 0],
     extrapolate: 'clamp',
   });

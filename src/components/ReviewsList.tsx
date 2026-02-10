@@ -9,6 +9,7 @@ interface ReviewsListProps {
   ListHeaderComponent?: React.ReactElement;
   onScroll?: (...args: unknown[]) => void;
   isLoading?: boolean;
+  onContentSizeChange?: (width: number, height: number) => void;
 }
 
 const SHEET_BG_COLOR = '#F5F5F0';
@@ -17,7 +18,8 @@ export default function ReviewsList({
   reviews,
   ListHeaderComponent,
   onScroll,
-  isLoading
+  isLoading,
+  onContentSizeChange,
 }: ReviewsListProps) {
   const { t, language } = useLanguage();
 
@@ -73,27 +75,29 @@ export default function ReviewsList({
       data={reviews}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderReviewItem}
-      
+
       ListHeaderComponent={ListHeaderComponent}
-      
+
       onScroll={onScroll}
       scrollEventThrottle={16}
-      
+
+      onContentSizeChange={onContentSizeChange}
+
       // 👇 FIXED: Transparent so the banner shows through the top gap
       style={{ backgroundColor: 'transparent' }}
-      
-      contentContainerStyle={{ 
+
+      contentContainerStyle={{
         paddingBottom: 0,
         backgroundColor: 'transparent', // Transparent container
         flexGrow: 1
       }}
-      
+
       ListEmptyComponent={isLoading ? (
         <View style={{ backgroundColor: SHEET_BG_COLOR, padding: 20 }}>
             <ActivityIndicator color="#D4AF37" />
         </View>
       ) : <EmptyComponent />}
-      
+
       // 👇 FOOTER: Keeps the bottom solid color
       ListFooterComponent={<View style={{ height: 250, backgroundColor: SHEET_BG_COLOR }} />}
     />
