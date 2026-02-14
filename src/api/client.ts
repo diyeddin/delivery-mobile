@@ -14,7 +14,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 //   ? '192.168.1.101:8000'
 //   : 'api.production.com';
 
-export const WS_URL = process.env.EXPO_PUBLIC_WS_URL;
+export const WS_HOST = process.env.EXPO_PUBLIC_WS_HOST;
 
 // ─── Auth Interceptor Manager ───────────────────────
 class AuthInterceptorManager {

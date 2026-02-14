@@ -10,7 +10,7 @@ interface AddressPayload {
 
 export const addressesApi = {
   getAll: async (signal?: AbortSignal): Promise<Address[]> => {
-    const res = await client.get('/addresses', { signal });
+    const res = await client.get('/addresses/', { signal });
     return res.data;
   },
 
