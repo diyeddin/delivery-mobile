@@ -3,7 +3,7 @@ import type { Order, OrderDetail, PlaceOrderResponse } from '../types';
 
 export const ordersApi = {
   getMyOrders: async (signal?: AbortSignal): Promise<Order[]> => {
-    const res = await client.get('/orders/me/', { signal });
+    const res = await client.get('/orders/me', { signal });
     return res.data;
   },
 

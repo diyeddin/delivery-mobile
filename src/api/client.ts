@@ -4,13 +4,17 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
 // ─── API URL Configuration ──────────────────────────
 // Set via environment or override here for local development
-const API_URL = __DEV__
-  ? 'http://192.168.1.101:8000/api/v1'
-  : 'https://api.production.com/api/v1';
+// const API_URL = __DEV__
+//   ? 'http://192.168.1.101:8000/api/v1'
+//   : 'https://api.production.com/api/v1';
 
-export const WS_HOST = __DEV__
-  ? '192.168.1.101:8000'
-  : 'api.production.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+// export const WS_HOST = __DEV__
+//   ? '192.168.1.101:8000'
+//   : 'api.production.com';
+
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL;
 
 // ─── Auth Interceptor Manager ───────────────────────
 class AuthInterceptorManager {

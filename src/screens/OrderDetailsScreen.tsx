@@ -16,13 +16,11 @@ import Toast from 'react-native-toast-message';
 import { useAbortController } from '../hooks/useAbortController';
 import { useMountedRef } from '../hooks/useMountedRef';
 import { handleApiError } from '../utils/handleApiError';
-import { WS_HOST } from '../api/client';
+import { WS_URL } from '../api/client';
 
 import RateOrderModal from '../components/RateOrderModal';
 import OrderTimeline from '../components/OrderTimeline';
 import OrderReceipt from '../components/OrderReceipt';
-
-const WS_BASE_URL = `ws://${WS_HOST}/api/v1/orders`;
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 
@@ -53,7 +51,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
         const token = await SecureStore.getItemAsync('token');
         if (!token || cancelled) return;
 
-        const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
+        const url = `${WS_URL}/${orderId}/ws?token=${token}`;
         if (cancelled) return;
 
         ws = new WebSocket(url);
