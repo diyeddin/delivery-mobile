@@ -10,7 +10,7 @@ interface AddressPayload {
 
 export const addressesApi = {
   getAll: async (signal?: AbortSignal): Promise<Address[]> => {
-    const res = await client.get('/addresses/', { signal });
+    const res = await client.get('/addresses', { signal });
     return res.data;
   },
 
@@ -20,7 +20,7 @@ export const addressesApi = {
   },
 
   create: async (payload: AddressPayload): Promise<Address> => {
-    const res = await client.post('/addresses/', payload);
+    const res = await client.post('/addresses/', payload); // fix trailing slash
     return res.data;
   },
 

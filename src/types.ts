@@ -40,7 +40,7 @@ export type OrderStatus =
   | 'confirmed'
   | 'assigned'
   | 'picked_up'
-  | 'on_the_way'
+  | 'in_transit'
   | 'delivered'
   | 'canceled';
 
