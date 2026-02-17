@@ -86,6 +86,8 @@ export default function CheckoutScreen({ navigation }: Props) {
       // 2. Send API Request
       const data = await ordersApi.placeOrder({
         delivery_address: address.address_line,
+        delivery_latitude: address.latitude,
+        delivery_longitude: address.longitude,
         items: itemsPayload,
         // 👇 New Fields
         payment_method: paymentMethod,

@@ -146,6 +146,8 @@ export interface Address {
   id: number;
   label: string;         // "Home", "Work"
   address_line: string;  // "123 Main St"
+  latitude?: number;
+  longitude?: number;
   instructions?: string;
   is_default: boolean;
 }

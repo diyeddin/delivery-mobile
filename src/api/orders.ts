@@ -14,6 +14,8 @@ export const ordersApi = {
 
   placeOrder: async (payload: {
     delivery_address: string;
+    delivery_latitude?: number;
+    delivery_longitude?: number;
     items: { product_id: number; quantity: number }[];
     payment_method: string;
     note: string;

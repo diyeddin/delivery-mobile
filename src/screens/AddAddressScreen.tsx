@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Save, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Save, CheckCircle, MapPin, Crosshair } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import { addressesApi } from '../api/addresses';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../context/LanguageContext';
 import { handleApiError } from '../utils/handleApiError';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'AddAddress'>;
+
+const DEFAULT_COORDS = { latitude: 33.5138, longitude: 36.2765 }; // Damascus fallback
 
 export default function AddAddressScreen({ navigation, route }: Props) {
   const { t, isRTL } = useLanguage();
@@ -22,9 +26,13 @@ export default function AddAddressScreen({ navigation, route }: Props) {
   const [addressLine, setAddressLine] = useState(addressToEdit?.address_line || '');
   const [instructions, setInstructions] = useState(addressToEdit?.instructions || '');
   const [isDefault, setIsDefault] = useState(addressToEdit?.is_default || false);
-  
+  const [latitude, setLatitude] = useState<number | undefined>(addressToEdit?.latitude);
+  const [longitude, setLongitude] = useState<number | undefined>(addressToEdit?.longitude);
+
   const [loading, setLoading] = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
   const [customLabel, setCustomLabel] = useState(''); // Handle custom typing for label
+  const mapRef = useRef<MapView>(null);
 
   // Sync custom label if the initial label isn't one of the presets
   useEffect(() => {
@@ -33,6 +41,63 @@ export default function AddAddressScreen({ navigation, route }: Props) {
         setCustomLabel(addressToEdit.label);
     }
   }, [isEditing]);
+
+  // Get user's current location on mount (if not editing with existing coords)
+  useEffect(() => {
+    if (latitude && longitude) return;
+    (async () => {
+      setLocLoading(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setLatitude(DEFAULT_COORDS.latitude);
+          setLongitude(DEFAULT_COORDS.longitude);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setLatitude(loc.coords.latitude);
+        setLongitude(loc.coords.longitude);
+        mapRef.current?.animateToRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }, 500);
+      } catch {
+        setLatitude(DEFAULT_COORDS.latitude);
+        setLongitude(DEFAULT_COORDS.longitude);
+      } finally {
+        setLocLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleRecenter = async () => {
+    setLocLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setLatitude(loc.coords.latitude);
+      setLongitude(loc.coords.longitude);
+      mapRef.current?.animateToRegion({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 500);
+    } catch {
+      // ignore
+    } finally {
+      setLocLoading(false);
+    }
+  };
+
+  const handleMapPress = (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+    const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
+    setLatitude(lat);
+    setLongitude(lng);
+  };
 
   const handleSave = async () => {
     if (!addressLine.trim()) {
@@ -48,6 +113,8 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       const payload = {
         label: finalLabel,
         address_line: addressLine,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
         instructions: instructions || null,
         is_default: isDefault,
       };
@@ -61,9 +128,9 @@ export default function AddAddressScreen({ navigation, route }: Props) {
         await addressesApi.create(payload);
         Toast.show({ type: 'success', text1: t('address_saved') });
       }
-      
-      navigation.goBack(); 
-      
+
+      navigation.goBack();
+
     } catch (error: unknown) {
       const msg = handleApiError(error, { fallbackTitle: t('error'), fallbackMessage: t('failed_to_save_address'), showToast: false });
       Toast.show({ type: 'error', text1: t('error'), text2: msg });
@@ -71,6 +138,8 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       setLoading(false);
     }
   };
+
+  const markerCoord = latitude && longitude ? { latitude, longitude } : null;
 
   return (
     <SafeAreaView className="flex-1 bg-creme" edges={['top']}>
@@ -84,12 +153,62 @@ export default function AddAddressScreen({ navigation, route }: Props) {
         </Text>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
         <ScrollView className="p-6">
-          
+
+          {/* Map Picker */}
+          <View className="mb-6">
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{t('pin_location' as any) || 'Pin Location'}</Text>
+            <View className="h-52 rounded-xl overflow-hidden border border-gray-200 relative">
+              {locLoading && !markerCoord ? (
+                <View className="flex-1 items-center justify-center bg-gray-100">
+                  <ActivityIndicator size="small" color="#D4AF37" />
+                </View>
+              ) : (
+                <MapView
+                  ref={mapRef}
+                  provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                  style={{ width: '100%', height: '100%' }}
+                  initialRegion={{
+                    latitude: latitude || DEFAULT_COORDS.latitude,
+                    longitude: longitude || DEFAULT_COORDS.longitude,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                  }}
+                  onPress={handleMapPress}
+                >
+                  {markerCoord && (
+                    <Marker
+                      coordinate={markerCoord}
+                      draggable
+                      onDragEnd={(e) => handleMapPress(e)}
+                    >
+                      <View className="bg-onyx p-2 rounded-full border-2 border-white shadow-sm">
+                        <MapPin size={16} color="#D4AF37" />
+                      </View>
+                    </Marker>
+                  )}
+                </MapView>
+              )}
+
+              {/* Recenter Button */}
+              <TouchableOpacity
+                onPress={handleRecenter}
+                className="absolute bottom-2 right-2 bg-white p-2 rounded-full shadow-md border border-gray-100"
+              >
+                {locLoading ? (
+                  <ActivityIndicator size={16} color="#0F0F0F" />
+                ) : (
+                  <Crosshair size={16} color="#0F0F0F" />
+                )}
+              </TouchableOpacity>
+            </View>
+            <Text className="text-gray-400 text-xs mt-1">{t('tap_map_hint' as any) || 'Tap or drag pin to set delivery location'}</Text>
+          </View>
+
           {/* Label Field */}
           <View className="mb-6">
             <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{t('label')}</Text>

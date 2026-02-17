@@ -4,6 +4,8 @@ import type { Address } from '../types';
 interface AddressPayload {
   label: string;
   address_line: string;
+  latitude?: number | null;
+  longitude?: number | null;
   instructions: string | null;
   is_default: boolean;
 }
