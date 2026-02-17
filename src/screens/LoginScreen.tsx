@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation }: Props) {
       const data = await authApi.login(email, password);
 
       // 3. Login using Context
-      await login(data.access_token);
+      await login(data.access_token, data.refresh_token);
 
       // 4. Close Modal on Success
       if (navigation.canGoBack()) {

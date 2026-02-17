@@ -2,6 +2,7 @@ import client from './client';
 
 interface AuthTokenResponse {
   access_token: string;
+  refresh_token: string;
 }
 
 interface SignupResponse {

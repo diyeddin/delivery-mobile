@@ -24,5 +24,30 @@ export const storage = {
     } catch (error) {
       console.error("Error removing token", error);
     }
-  }
+  },
+
+  getRefreshToken: async (): Promise<string | null> => {
+    try {
+      return await SecureStore.getItemAsync('refresh_token');
+    } catch (error) {
+      console.error("Error getting refresh token", error);
+      return null;
+    }
+  },
+
+  setRefreshToken: async (token: string): Promise<void> => {
+    try {
+      await SecureStore.setItemAsync('refresh_token', token);
+    } catch (error) {
+      console.error("Error saving refresh token", error);
+    }
+  },
+
+  removeRefreshToken: async (): Promise<void> => {
+    try {
+      await SecureStore.deleteItemAsync('refresh_token');
+    } catch (error) {
+      console.error("Error removing refresh token", error);
+    }
+  },
 };

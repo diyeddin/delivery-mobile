@@ -27,11 +27,11 @@ Notifications.setNotificationHandler({
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string) => Promise<void>;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
-  registerPushToken: () => Promise<void>; // <--- Expose this for the Settings Screen
+  registerPushToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUser(null);
     await storage.removeToken();
+    await storage.removeRefreshToken();
   }, []);
 
   // Keep a ref to the latest logout for the interceptor
@@ -54,14 +55,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // --- INTERCEPTOR ---
   useEffect(() => {
-    authInterceptor.setup(() => {
-      logoutRef.current();
-      Toast.show({
-        type: 'error',
-        text1: 'Session Expired',
-        text2: 'Please log in again.',
-      });
-    });
+    authInterceptor.setup(
+      () => {
+        logoutRef.current();
+        Toast.show({
+          type: 'error',
+          text1: 'Session Expired',
+          text2: 'Please log in again.',
+        });
+      },
+      (newAccessToken: string, _newRefreshToken: string) => {
+        // Update in-memory state when interceptor refreshes tokens
+        try {
+          const decoded = jwtDecode<User>(newAccessToken);
+          setToken(newAccessToken);
+          setUser(decoded);
+        } catch {}
+      },
+    );
     return () => {
       authInterceptor.teardown();
     };
@@ -76,8 +87,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const decoded = jwtDecode<User>(storedToken);
           const currentTime = Date.now() / 1000;
           if (decoded.exp && decoded.exp < currentTime) {
-            console.log("Token expired on load");
-            await logout();
+            // Access token expired — let the interceptor handle refresh on next API call
+            // Just check if we have a refresh token to keep the session alive
+            const refreshToken = await storage.getRefreshToken();
+            if (refreshToken) {
+              // Keep user in "logged in" state; the interceptor will refresh
+              // when the first API call is made
+              setToken(storedToken);
+              setUser(decoded);
+            } else {
+              await logout();
+            }
           } else {
             setToken(storedToken);
             setUser(decoded);
@@ -104,30 +124,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 1. Check/Request Permissions
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      
+
       if (finalStatus !== 'granted') {
         console.log('Failed to get push token for push notification!');
         return;
       }
 
       // 2. Get the Token
-      // NOTE: We need projectId for Expo 49+
       const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      
+
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId, 
+        projectId,
       });
       const expoToken = tokenData.data;
-      console.log("📲 Expo Push Token:", expoToken);
 
       // 3. Send to Backend
       await usersApi.registerPushToken(expoToken);
-      console.log("✅ Token sent to backend successfully");
 
     } catch (error) {
       console.error("Error registering push token:", error);
@@ -145,15 +162,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // --- LOGIN ---
-  const login = async (newToken: string) => {
+  const login = async (accessToken: string, refreshToken: string) => {
     try {
-      const decoded = jwtDecode<User>(newToken);
-      setToken(newToken);
+      const decoded = jwtDecode<User>(accessToken);
+      setToken(accessToken);
       setUser(decoded);
-      await storage.setToken(newToken);
-      
+      await storage.setToken(accessToken);
+      await storage.setRefreshToken(refreshToken);
+
       // AUTO-REGISTER ON LOGIN
-      // We wait a brief moment to ensure state is settled
       setTimeout(() => {
         registerForPushNotificationsAsync();
       }, 1000);
@@ -172,14 +189,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      login, 
-      logout, 
-      isAuthenticated: !!user, 
+    <AuthContext.Provider value={{
+      user,
+      token,
+      login,
+      logout,
+      isAuthenticated: !!user,
       isLoading,
-      registerPushToken: registerForPushNotificationsAsync 
+      registerPushToken: registerForPushNotificationsAsync
     }}>
       {children}
     </AuthContext.Provider>
