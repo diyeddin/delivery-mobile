@@ -57,6 +57,8 @@ export interface Order {
 export interface OrderDetail extends Order {
   is_reviewed?: boolean;
   delivery_address?: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
   note?: string;
   store: {
     id: number;

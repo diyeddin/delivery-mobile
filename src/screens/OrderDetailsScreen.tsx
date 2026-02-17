@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl,
   StatusBar, Linking, Platform, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { ArrowLeft, Check, Store, Phone, XCircle, Star } from 'lucide-react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { ArrowLeft, Check, Store, Phone, XCircle, Star, Navigation, MapPin } from 'lucide-react-native';
 import { ordersApi } from '../api/orders';
 import { storesApi } from '../api/stores';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -34,10 +34,12 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [isRateVisible, setRateVisible] = useState(false);
   const [hasRated, setHasRated] = useState(false);
 
+  const mapRef = useRef<MapView>(null);
   const { getSignal } = useAbortController();
   const mounted = useMountedRef();
 
@@ -88,6 +90,8 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
             const data = JSON.parse(e.data);
             if (data.type === 'status_update') {
               setOrder((prev) => prev ? ({ ...prev, status: data.status }) : prev);
+            } else if (data.type === 'gps_update') {
+              setDriverLocation({ latitude: data.latitude, longitude: data.longitude });
             }
           } catch (_err) { /* WS parse error - non-critical */ }
         };
@@ -189,6 +193,29 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
   const isCanceled = order.status === 'canceled';
   const showMap = order.status !== 'delivered' && !isCanceled;
+  const isDriverTracking = ['assigned', 'picked_up', 'in_transit'].includes(order.status);
+
+  const storeCoords = order.store?.latitude && order.store?.longitude
+    ? { latitude: order.store.latitude, longitude: order.store.longitude }
+    : null;
+
+  const deliveryCoords = order.delivery_latitude && order.delivery_longitude
+    ? { latitude: order.delivery_latitude, longitude: order.delivery_longitude }
+    : null;
+
+  // Fit map to show all markers when driver location updates
+  useEffect(() => {
+    if (!mapRef.current || !driverLocation) return;
+    const coords = [driverLocation];
+    if (storeCoords) coords.push(storeCoords);
+    if (deliveryCoords) coords.push(deliveryCoords);
+    if (coords.length > 1) {
+      mapRef.current.fitToCoordinates(coords, {
+        edgePadding: { top: 60, right: 40, bottom: 200, left: 40 },
+        animated: true,
+      });
+    }
+  }, [driverLocation]);
 
   return (
     <View className="flex-1 bg-creme">
@@ -215,21 +242,56 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
         {showMap ? (
             <View className="h-72 w-full bg-gray-200 relative">
               <MapView
+                ref={mapRef}
                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                 style={{ width: '100%', height: '100%' }}
                 initialRegion={{
                   latitude: order.store?.latitude || 33.5138,
                   longitude: order.store?.longitude || 36.2765,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
                 }}
               >
-                {/* ... Marker ... */}
-                <Marker coordinate={{ latitude: order.store?.latitude || 0, longitude: order.store?.longitude || 0 }}>
-                  <View className="bg-onyx p-2 rounded-full border-2 border-white shadow-sm">
+                {/* Store Marker */}
+                {storeCoords && (
+                  <Marker coordinate={storeCoords}>
+                    <View className="bg-onyx p-2 rounded-full border-2 border-white shadow-sm">
                       <Store size={16} color="#D4AF37" />
-                  </View>
-                </Marker>
+                    </View>
+                  </Marker>
+                )}
+
+                {/* Delivery Address Marker */}
+                {deliveryCoords && (
+                  <Marker coordinate={deliveryCoords}>
+                    <View className="bg-white p-2 rounded-full border-2 border-onyx shadow-sm">
+                      <MapPin size={16} color="#0F0F0F" />
+                    </View>
+                  </Marker>
+                )}
+
+                {/* Driver Live Location Marker */}
+                {isDriverTracking && driverLocation && (
+                  <Marker coordinate={driverLocation}>
+                    <View className="bg-gold-500 p-2 rounded-full border-2 border-white shadow-lg">
+                      <Navigation size={16} color="#FFFFFF" />
+                    </View>
+                  </Marker>
+                )}
+
+                {/* Route Polyline: driver -> store -> delivery */}
+                {isDriverTracking && driverLocation && (
+                  <Polyline
+                    coordinates={[
+                      driverLocation,
+                      ...(storeCoords ? [storeCoords] : []),
+                      ...(deliveryCoords ? [deliveryCoords] : []),
+                    ]}
+                    strokeColor="#D4AF37"
+                    strokeWidth={3}
+                    lineDashPattern={[6, 3]}
+                  />
+                )}
               </MapView>
               
               <View className="absolute bottom-4 left-4 right-4 bg-white p-4 rounded-xl shadow-lg flex-row justify-between items-center border border-gray-100">
