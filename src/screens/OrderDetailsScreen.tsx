@@ -122,6 +122,30 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
     };
   }, [orderId, order?.status]);
 
+  // Fit map to show all markers when driver location updates
+  useEffect(() => {
+    if (!mapRef.current || !driverLocation || !order) return;
+
+    const storeCoords = order.store?.latitude && order.store?.longitude
+      ? { latitude: order.store.latitude, longitude: order.store.longitude }
+      : null;
+
+    const deliveryCoords = order.delivery_latitude && order.delivery_longitude
+      ? { latitude: order.delivery_latitude, longitude: order.delivery_longitude }
+      : null;
+
+    const coords = [driverLocation];
+    if (storeCoords) coords.push(storeCoords);
+    if (deliveryCoords) coords.push(deliveryCoords);
+
+    if (coords.length > 1) {
+      mapRef.current.fitToCoordinates(coords, {
+        edgePadding: { top: 60, right: 40, bottom: 200, left: 40 },
+        animated: true,
+      });
+    }
+  }, [driverLocation, order?.store?.latitude, order?.store?.longitude, order?.delivery_latitude, order?.delivery_longitude]);
+
   const fetchOrderDetails = async () => {
     try {
       const signal = getSignal();
@@ -202,20 +226,6 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   const deliveryCoords = order.delivery_latitude && order.delivery_longitude
     ? { latitude: order.delivery_latitude, longitude: order.delivery_longitude }
     : null;
-
-  // Fit map to show all markers when driver location updates
-  useEffect(() => {
-    if (!mapRef.current || !driverLocation) return;
-    const coords = [driverLocation];
-    if (storeCoords) coords.push(storeCoords);
-    if (deliveryCoords) coords.push(deliveryCoords);
-    if (coords.length > 1) {
-      mapRef.current.fitToCoordinates(coords, {
-        edgePadding: { top: 60, right: 40, bottom: 200, left: 40 },
-        animated: true,
-      });
-    }
-  }, [driverLocation]);
 
   return (
     <View className="flex-1 bg-creme">
