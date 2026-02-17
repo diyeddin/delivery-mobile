@@ -5,6 +5,7 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 // ─── API URL Configuration ──────────────────────────
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export const WS_HOST = process.env.EXPO_PUBLIC_WS_HOST;
+export const WS_PROTOCOL = API_URL?.startsWith('https') ? 'wss' : 'ws';
 
 // ─── Auth Interceptor Manager ───────────────────────
 class AuthInterceptorManager {

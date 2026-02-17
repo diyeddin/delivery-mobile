@@ -16,13 +16,13 @@ import Toast from 'react-native-toast-message';
 import { useAbortController } from '../hooks/useAbortController';
 import { useMountedRef } from '../hooks/useMountedRef';
 import { handleApiError } from '../utils/handleApiError';
-import { WS_HOST } from '../api/client';
+import { WS_HOST, WS_PROTOCOL } from '../api/client';
 
 import RateOrderModal from '../components/RateOrderModal';
 import OrderTimeline from '../components/OrderTimeline';
 import OrderReceipt from '../components/OrderReceipt';
 
-const WS_BASE_URL = `ws://${WS_HOST}/api/v1/orders`;
+const WS_BASE_URL = `${WS_PROTOCOL}://${WS_HOST}/api/v1/orders`;
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'OrderDetails'>;
 
@@ -43,20 +43,45 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
 
   useEffect(() => { fetchOrderDetails(); }, []);
 
-  // WebSocket with mounted guard to prevent race condition
+  // WebSocket with reconnection, heartbeat, and mounted guard
   useEffect(() => {
+    // Don't maintain WS for terminal states
+    if (order && (order.status === 'delivered' || order.status === 'canceled')) return;
+
     let ws: WebSocket | null = null;
     let cancelled = false;
+    let reconnectAttempts = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+    let hasConnectedBefore = false;
 
-    const connectWebSocket = async () => {
+    const connect = async () => {
+      if (cancelled) return;
+
       try {
         const token = await SecureStore.getItemAsync('token');
         if (!token || cancelled) return;
 
         const url = `${WS_BASE_URL}/${orderId}/ws?token=${token}`;
-        if (cancelled) return;
-
         ws = new WebSocket(url);
+
+        ws.onopen = () => {
+          reconnectAttempts = 0;
+
+          // Re-fetch order on reconnect to catch updates missed while disconnected
+          if (hasConnectedBefore) {
+            fetchOrderDetails();
+          }
+          hasConnectedBefore = true;
+
+          // Heartbeat every 30s to keep connection alive through proxies
+          heartbeatTimer = setInterval(() => {
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'ping' }));
+            }
+          }, 30000);
+        };
+
         ws.onmessage = (e) => {
           if (!mounted.current) return;
           try {
@@ -66,15 +91,32 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
             }
           } catch (_err) { /* WS parse error - non-critical */ }
         };
+
+        ws.onerror = () => {};
+
+        ws.onclose = () => {
+          if (heartbeatTimer) clearInterval(heartbeatTimer);
+          if (cancelled) return;
+
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s, up to 10 attempts
+          if (reconnectAttempts < 10) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(connect, delay);
+          }
+        };
       } catch (_error) { /* WS connection error - non-critical */ }
     };
 
-    connectWebSocket();
+    connect();
+
     return () => {
       cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       ws?.close();
     };
-  }, [orderId]);
+  }, [orderId, order?.status]);
 
   const fetchOrderDetails = async () => {
     try {
