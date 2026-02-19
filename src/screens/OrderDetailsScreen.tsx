@@ -256,8 +256,8 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                 style={{ width: '100%', height: '100%' }}
                 initialRegion={{
-                  latitude: order.store?.latitude || 33.5138,
-                  longitude: order.store?.longitude || 36.2765,
+                  latitude: order.store?.latitude ?? order.delivery_latitude ?? 33.5138,
+                  longitude: order.store?.longitude ?? order.delivery_longitude ?? 36.2765,
                   latitudeDelta: 0.05,
                   longitudeDelta: 0.05,
                 }}

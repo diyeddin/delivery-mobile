@@ -105,6 +105,11 @@ export default function AddAddressScreen({ navigation, route }: Props) {
       return;
     }
 
+    if (latitude == null || longitude == null) {
+      Toast.show({ type: 'error', text1: t('pin_location_required' as any) || 'Location required', text2: t('tap_map_hint' as any) || 'Tap the map to set your delivery location' });
+      return;
+    }
+
     setLoading(true);
     try {
       // Determine final label (Preset vs Custom)
@@ -277,8 +282,8 @@ export default function AddAddressScreen({ navigation, route }: Props) {
           {/* Save Button */}
           <TouchableOpacity
             onPress={handleSave}
-            disabled={loading}
-            className="bg-onyx py-4 rounded-xl flex-row items-center justify-center shadow-lg mb-10"
+            disabled={loading || locLoading}
+            className={`py-4 rounded-xl flex-row items-center justify-center shadow-lg mb-10 ${loading || locLoading ? 'bg-gray-400' : 'bg-onyx'}`}
           >
             {loading ? (
               <ActivityIndicator color="white" />

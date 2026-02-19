@@ -75,6 +75,11 @@ export default function CheckoutScreen({ navigation }: Props) {
       return;
     }
 
+    if (address.latitude == null || address.longitude == null) {
+      Toast.show({ type: 'error', text1: t('address_missing_location' as any) || 'Address missing location', text2: t('update_address_pin' as any) || 'Please update your address with a map pin' });
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Construct Payload
