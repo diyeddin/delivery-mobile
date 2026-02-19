@@ -59,6 +59,8 @@ export interface OrderDetail extends Order {
   delivery_address?: string;
   delivery_latitude?: number;
   delivery_longitude?: number;
+  driver_latitude?: number;
+  driver_longitude?: number;
   note?: string;
   store: {
     id: number;

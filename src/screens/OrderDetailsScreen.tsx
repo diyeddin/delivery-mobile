@@ -40,6 +40,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   const [hasRated, setHasRated] = useState(false);
 
   const mapRef = useRef<MapView>(null);
+  const orderStatusRef = useRef<string | undefined>(undefined);
   const { getSignal } = useAbortController();
   const mounted = useMountedRef();
 
@@ -48,7 +49,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
   // WebSocket with reconnection, heartbeat, and mounted guard
   useEffect(() => {
     // Don't maintain WS for terminal states
-    if (order && (order.status === 'delivered' || order.status === 'canceled')) return;
+    if (orderStatusRef.current === 'delivered' || orderStatusRef.current === 'canceled') return;
 
     let ws: WebSocket | null = null;
     let cancelled = false;
@@ -90,6 +91,13 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
             const data = JSON.parse(e.data);
             if (data.type === 'status_update') {
               setOrder((prev) => prev ? ({ ...prev, status: data.status }) : prev);
+              orderStatusRef.current = data.status;
+              // Close WS for terminal states — no need to keep listening
+              if (data.status === 'delivered' || data.status === 'canceled') {
+                cancelled = true;
+                if (heartbeatTimer) clearInterval(heartbeatTimer);
+                ws?.close();
+              }
             } else if (data.type === 'gps_update') {
               setDriverLocation({ latitude: data.latitude, longitude: data.longitude });
             }
@@ -120,7 +128,7 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       ws?.close();
     };
-  }, [orderId, order?.status]);
+  }, [orderId]);
 
   // Fit map to show all markers when driver location updates
   useEffect(() => {
@@ -151,7 +159,14 @@ export default function OrderDetailsScreen({ route, navigation }: Props) {
       const signal = getSignal();
       const data = await ordersApi.getOrderDetails(orderId, signal);
       setOrder(data);
+      orderStatusRef.current = data.status;
       setHasRated(data.is_reviewed || false);
+      // Seed driver location from API as fallback (WS will override with live data)
+      if (data.driver_latitude && data.driver_longitude) {
+        const driverLat = data.driver_latitude;
+        const driverLng = data.driver_longitude;
+        setDriverLocation((prev) => prev ?? { latitude: driverLat, longitude: driverLng });
+      }
     } catch (error) {
       handleApiError(error, { fallbackTitle: 'Order Details', showToast: false });
     } finally {
